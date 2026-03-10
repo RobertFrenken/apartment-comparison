@@ -1,4 +1,4 @@
-import { CRITERIA, DEFAULT_WEIGHTS } from "../lib/scoring.js";
+import { CRITERIA, DEFAULT_WEIGHTS, scoreCriterion } from "../lib/scoring.js";
 import { COLORS } from "../lib/constants.js";
 import { cardStyle } from "../lib/styles.js";
 
@@ -26,7 +26,7 @@ export default function RadarChart({ apartments, weights = DEFAULT_WEIGHTS }) {
   if (numAxes < 3) return null;
 
   const aptScores = apartments.map((apt) =>
-    activeCriteria.map((c) => c.score(apt) / 10)
+    activeCriteria.map((c) => scoreCriterion(c, apt) / 10)
   );
 
   const axisEndpoints = activeCriteria.map((_, i) => axisPoint(i, 1.0, numAxes));
