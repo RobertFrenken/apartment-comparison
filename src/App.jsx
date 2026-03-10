@@ -5,8 +5,9 @@ import ComparisonTable from "./components/ComparisonTable.jsx";
 import CostBreakdown from "./components/CostBreakdown.jsx";
 import ScoreCard from "./components/ScoreCard.jsx";
 import AddListing from "./components/AddListing.jsx";
+import About from "./components/About.jsx";
 
-const TABS = ["Compare", "Costs", "Scorecard", "Add"];
+const TABS = ["Compare", "Costs", "Scorecard", "Add", "About"];
 
 export default function App() {
   const [apartments, setApartments] = useState(() => {
@@ -77,6 +78,7 @@ export default function App() {
       {activeTab === "Costs" && <CostBreakdown apartments={apartments} />}
       {activeTab === "Scorecard" && <ScoreCard apartments={apartments} />}
       {activeTab === "Add" && <AddListing onAdd={addApartment} />}
+      {activeTab === "About" && <About />}
     </div>
   );
 }
