@@ -1,0 +1,190 @@
+[
+  {
+    "id": "881538",
+    "name": "3BR/2BA Upscale Livermore",
+    "platform": "FurnishedFinder",
+    "listing_id": "881538_1",
+    "url": "https://www.furnishedfinder.com/property/881538_1",
+    "added_date": "2026-03-10",
+    "status": "active",
+    "financials": {
+      "monthly_rent": 4200,
+      "utilities_included": false,
+      "est_monthly_utilities": 175,
+      "security_deposit": 3000,
+      "application_fee": 40,
+      "cleaning_fee": 150
+    },
+    "space": {
+      "sqft": 1488,
+      "bedrooms": 3,
+      "bedroom_details": ["King Bed", "Queen Bed", "Twin Bed"],
+      "bathrooms": 2,
+      "bathroom_details": ["Private Full Bath", "Private Full Bath"],
+      "parking": "Double Garage (free)",
+      "outdoor_space": "Large fenced front & back yard",
+      "pool": false
+    },
+    "appliances": {
+      "dishwasher": true,
+      "microwave": true,
+      "fridge": true,
+      "stovetop": true,
+      "washer_dryer": "In-unit",
+      "fireplace": true,
+      "water_softener": false
+    },
+    "amenities": {
+      "ac": "Central",
+      "heating": true,
+      "internet": null,
+      "tv": true,
+      "storage": true,
+      "wheelchair_accessible": null,
+      "near_transit": null,
+      "community_amenities": []
+    },
+    "rules": {
+      "pets_allowed": false,
+      "smoking": false,
+      "max_occupancy": null,
+      "max_vehicles": null
+    },
+    "location": {
+      "city": "Livermore",
+      "state": "CA",
+      "zip": "94550",
+      "neighborhood": "Upscale area, near downtown Livermore",
+      "lat": null,
+      "lng": null,
+      "dist_llnl_miles": 3.5,
+      "drive_time_llnl_min": 9,
+      "nearest_grocery": [
+        { "name": "Trader Joe's", "address": "1122 E Stanley Blvd", "dist_miles": 1.2 },
+        { "name": "Nob Hill Foods", "address": "919 E Stanley Blvd", "dist_miles": 1.5 },
+        { "name": "Safeway", "address": "1554 First St", "dist_miles": 2.0 }
+      ],
+      "nearest_hospital": { "name": "Valleycare Medical Center", "dist_miles": 4.6 }
+    },
+    "lease": {
+      "contract_type": "Monthly furnished rental",
+      "min_stay_days": 30,
+      "available_from": "2026-05-22",
+      "available_until": "2026-08-25"
+    },
+    "landlord": {
+      "name": "Craig S.",
+      "location": "Pleasanton, CA",
+      "tenure_months": 7,
+      "verifications": ["Email", "Phone", "ID"],
+      "reviews": 0
+    },
+    "remote_work": {
+      "wifi_included": null,
+      "quiet_environment": true,
+      "dedicated_workspace": false,
+      "score": 3
+    },
+    "commute": {
+      "one_way_miles": 3.5,
+      "est_monthly_gas": 32.34,
+      "methods": ["Drive", "Bike"]
+    },
+    "photos_url": null,
+    "notes": "Upscale neighborhood near downtown. No WiFi confirmation is a concern. Fireplace + double garage are nice perks. Lower rent but utilities not included."
+  },
+  {
+    "id": "898100",
+    "name": "3BR/2BA Springtown w/ Pool",
+    "platform": "FurnishedFinder",
+    "listing_id": "898100_1",
+    "url": "https://www.furnishedfinder.com/property/898100_1",
+    "added_date": "2026-03-10",
+    "status": "active",
+    "financials": {
+      "monthly_rent": 5200,
+      "utilities_included": true,
+      "est_monthly_utilities": 0,
+      "security_deposit": 5200,
+      "application_fee": 0,
+      "cleaning_fee": 300
+    },
+    "space": {
+      "sqft": 1300,
+      "bedrooms": 3,
+      "bedroom_details": ["Queen Bed", "Queen Bed", "Twin Bed"],
+      "bathrooms": 2,
+      "bathroom_details": ["Private Full Bath", "Private Full Bath"],
+      "parking": "Driveway only (garage not included, free)",
+      "outdoor_space": "Private backyard",
+      "pool": true
+    },
+    "appliances": {
+      "dishwasher": true,
+      "microwave": true,
+      "fridge": true,
+      "stovetop": true,
+      "washer_dryer": "In-unit",
+      "fireplace": false,
+      "water_softener": true
+    },
+    "amenities": {
+      "ac": "Central",
+      "heating": true,
+      "internet": "Included",
+      "tv": "Smart TV",
+      "storage": null,
+      "wheelchair_accessible": true,
+      "near_transit": true,
+      "community_amenities": ["Tennis", "Greenbelt", "Community Pool"]
+    },
+    "rules": {
+      "pets_allowed": true,
+      "smoking": false,
+      "max_occupancy": 6,
+      "max_vehicles": 4
+    },
+    "location": {
+      "city": "Livermore",
+      "state": "CA",
+      "zip": "94551",
+      "neighborhood": "Springtown — quiet residential, near shops & parks",
+      "lat": null,
+      "lng": null,
+      "dist_llnl_miles": 5.5,
+      "drive_time_llnl_min": 11,
+      "nearest_grocery": [
+        { "name": "Safeway", "address": "4495 First St", "dist_miles": 1.5 },
+        { "name": "Lucky", "address": "2000 Portola Ave", "dist_miles": 2.0 },
+        { "name": "Trader Joe's", "address": "1122 E Stanley Blvd", "dist_miles": 2.5 }
+      ],
+      "nearest_hospital": { "name": "Kaiser Livermore", "dist_miles": 2.4 }
+    },
+    "lease": {
+      "contract_type": "Monthly furnished rental",
+      "min_stay_days": 30,
+      "available_from": "2026-05-23",
+      "available_until": "2026-08-25"
+    },
+    "landlord": {
+      "name": "Ana A.",
+      "location": "Livermore, CA",
+      "tenure_months": 6,
+      "verifications": ["Email", "Phone", "ID"],
+      "reviews": 0
+    },
+    "remote_work": {
+      "wifi_included": true,
+      "quiet_environment": true,
+      "dedicated_workspace": false,
+      "score": 4
+    },
+    "commute": {
+      "one_way_miles": 5.5,
+      "est_monthly_gas": 50.82,
+      "methods": ["Drive", "Bus"]
+    },
+    "photos_url": null,
+    "notes": "All utilities + WiFi included makes budgeting simpler. Dog friendly. Community pool + tennis. Slightly farther from LLNL but close to Kaiser. Higher deposit ($5,200)."
+  }
+]

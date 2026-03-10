@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.vite/
+*.local
+
+# Original source files (keep in repo for reference but not in the app)
+# listing1.txt
+# listing2.txt
+# apartment_comparison.xlsx
