@@ -1,7 +1,8 @@
+import { cardStyle, thStyle } from "../lib/styles.js";
+
 export default function About() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 800 }}>
-      {/* How It Works */}
       <Section title="How It Works">
         <p>This is a static site hosted on GitHub Pages — there's no backend or database. All apartment data lives in two places:</p>
         <ol>
@@ -20,7 +21,6 @@ export default function About() {
         <p>The "Reset data" button in the header clears localStorage and reloads from the JSON file.</p>
       </Section>
 
-      {/* Adding Listings */}
       <Section title="Adding Listings">
         <p>The Add tab offers two modes:</p>
         <ul>
@@ -34,35 +34,22 @@ export default function About() {
         </p>
       </Section>
 
-      {/* Scoring Methodology */}
       <Section title="Scoring Methodology">
-        <p>The Scorecard tab assigns each listing a score out of 100 based on weighted criteria:</p>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginTop: 8 }}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Criterion</th>
-              <th style={{ ...thStyle, textAlign: "center", width: 70 }}>Weight</th>
-              <th style={thStyle}>How It's Scored</th>
-            </tr>
-          </thead>
-          <tbody>
-            <Row label="Monthly Cost" weight="25%" detail="Total rent + utilities. $4,000 or less = 10/10, scales down to 2/10 above $5,500." />
-            <Row label="LLNL Proximity" weight="20%" detail="Driving distance to LLNL (7000 East Ave). 2 mi or less = 10/10, scales down by distance bracket." />
-            <Row label="Space" weight="15%" detail="Square footage. 1,500+ = 10/10, 1,300+ = 8/10, etc." />
-            <Row label="Amenities" weight="15%" detail="Points for: WiFi (2), washer/dryer (2), A/C (1), pool (1), community amenities (1), fireplace (1), water softener (1), transit access (1). Max 10." />
-            <Row label="Move-in Cost" weight="10%" detail="First month + deposit + fees. $5,000 or less = 10/10, scales down." />
-            <Row label="Remote Work" weight="10%" detail="Self-assessed 1-5 score (doubled to 0-10). Based on WiFi availability, quiet environment, workspace." />
-            <Row label="Pet Friendly" weight="5%" detail="Binary: pets allowed = 10, not allowed = 0." />
-          </tbody>
-        </table>
-        <p style={{ marginTop: 12 }}>
-          <strong>Customizing weights:</strong> Edit the <code>CRITERIA</code> array in{" "}
-          <code>src/components/ScoreCard.jsx</code>. Weights should sum to 100. If you're bringing a dog,
-          consider bumping Pet Friendly from 5% to 15-20% (and reducing another criterion).
+        <p>
+          Each listing is scored out of 100 based on 8 weighted criteria. Scores update live across
+          all tabs as you adjust settings. Use the <strong>Calculator</strong> tab to:
+        </p>
+        <ul>
+          <li>Adjust <strong>weights</strong> — prioritize what matters to you (cost vs. space vs. proximity, etc.)</li>
+          <li>Edit <strong>scoring thresholds</strong> — change what counts as "good" for each bracket (e.g., raise the monthly cost threshold if your budget allows it)</li>
+          <li>See the <strong>amenity checklist</strong> — 14 items scored with full transparency on what each listing gets credit for</li>
+        </ul>
+        <p>
+          The compact weight sliders on the Compare tab give quick access. The Calculator tab shows
+          every formula under the hood. Changes persist in your browser via localStorage.
         </p>
       </Section>
 
-      {/* Data Schema */}
       <Section title="Data Schema">
         <p>Each apartment object in <code>apartments.json</code> has these top-level sections:</p>
         <ul>
@@ -84,7 +71,6 @@ export default function About() {
         </p>
       </Section>
 
-      {/* Cost Calculations */}
       <Section title="Cost Calculations">
         <p>The Costs tab computes:</p>
         <ul>
@@ -98,17 +84,9 @@ export default function About() {
   );
 }
 
-const thStyle = {
-  textAlign: "left", padding: "10px 12px", color: "var(--text-secondary)",
-  borderBottom: "2px solid var(--border)", fontWeight: 500, fontSize: 13,
-};
-
 function Section({ title, children }) {
   return (
-    <div style={{
-      background: "var(--bg-card)", border: "1px solid var(--border)",
-      borderRadius: 8, padding: 28, boxShadow: "var(--shadow-sm)",
-    }}>
+    <div style={cardStyle}>
       <h3 style={{ fontSize: 15, color: "var(--text-primary)", fontWeight: 600, marginBottom: 16 }}>{title}</h3>
       <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7 }}>
         <style>{`

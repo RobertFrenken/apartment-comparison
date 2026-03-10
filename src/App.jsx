@@ -1,4 +1,4 @@
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useCallback, useRef, lazy, Suspense } from "react";
 import "./index.css";
 import initialApartments from "./data/apartments.json";
 import ComparisonTable from "./components/ComparisonTable.jsx";
@@ -6,40 +6,47 @@ import CostBreakdown from "./components/CostBreakdown.jsx";
 import ScoreCard from "./components/ScoreCard.jsx";
 import AddListing from "./components/AddListing.jsx";
 import About from "./components/About.jsx";
+import Timeline from "./components/Timeline.jsx";
+import ListingFilter from "./components/ListingFilter.jsx";
+import WeightSliders from "./components/WeightSliders.jsx";
+import { btnMedium } from "./lib/styles.js";
+import Calculator from "./components/Calculator.jsx";
+import { DEFAULT_WEIGHTS } from "./lib/scoring.js";
+import useLocalStorage from "./lib/useLocalStorage.js";
 
 const MapView = lazy(() => import("./components/MapView.jsx"));
 
-const TABS = ["Compare", "Costs", "Scorecard", "Map", "Add", "About"];
+const TABS = ["Compare", "Costs", "Scorecard", "Calculator", "Map", "Add", "About"];
 
 export default function App() {
-  const [apartments, setApartments] = useState(() => {
-    const saved = localStorage.getItem("apartments");
-    return saved ? JSON.parse(saved) : initialApartments;
-  });
+  const [apartments, setApartments, resetApartments] = useLocalStorage("apartments", initialApartments);
+  const [hiddenIds, setHiddenIds] = useLocalStorage("hidden-listings", []);
+  const [weights, setWeights] = useLocalStorage("scoring-weights", DEFAULT_WEIGHTS);
+  const [brackets, setBrackets] = useLocalStorage("scoring-brackets", {});
   const [activeTab, setActiveTab] = useState("Compare");
+
+  const visibleApartments = apartments.filter((a) => !hiddenIds.includes(a.id));
   const [copyLabel, setCopyLabel] = useState("Copy JSON");
   const importInputRef = useRef(null);
 
-  const save = (updated) => {
-    setApartments(updated);
-    localStorage.setItem("apartments", JSON.stringify(updated));
-  };
-
-  const addApartment = (apt) => save([...apartments, { ...apt, id: String(Date.now()) }]);
-  const removeApartment = (id) => save(apartments.filter((a) => a.id !== id));
+  const addApartment = (apt) => setApartments([...apartments, { ...apt, id: String(Date.now()) }]);
+  const removeApartment = (id) => setApartments(apartments.filter((a) => a.id !== id));
   const duplicateApartment = (id) => {
     const original = apartments.find((a) => a.id === id);
     if (!original) return;
     const clone = JSON.parse(JSON.stringify(original));
     clone.name = `${clone.name} (Copy)`;
     clone.id = String(Date.now());
-    save([...apartments, clone]);
+    setApartments([...apartments, clone]);
   };
 
-  const resetData = () => {
-    localStorage.removeItem("apartments");
-    setApartments(initialApartments);
-  };
+  const updateApartmentDates = useCallback((id, from, until) => {
+    setApartments((prev) =>
+      prev.map((a) =>
+        a.id !== id ? a : { ...a, lease: { ...a.lease, available_from: from, available_until: until } }
+      )
+    );
+  }, [setApartments]);
 
   const downloadJSON = () => {
     const blob = new Blob([JSON.stringify(apartments, null, 2)], { type: "application/json" });
@@ -59,7 +66,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(ev.target.result);
         if (!Array.isArray(parsed)) throw new Error("Expected an array");
-        save(parsed);
+        setApartments(parsed);
       } catch (err) {
         alert(`Import failed: ${err.message}`);
       }
@@ -98,7 +105,6 @@ export default function App() {
         {TABS.map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             background: "none",
-            borderBottom: activeTab === tab ? "2px solid var(--accent-blue)" : "2px solid transparent",
             border: "none",
             borderBottomWidth: 2,
             borderBottomStyle: "solid",
@@ -112,16 +118,8 @@ export default function App() {
         ))}
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", gap: 8, alignSelf: "center", marginBottom: 4 }}>
-          <button onClick={downloadJSON} style={{
-            background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
-            borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
-            fontFamily: "inherit",
-          }}>Download JSON</button>
-          <button onClick={() => importInputRef.current?.click()} style={{
-            background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
-            borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
-            fontFamily: "inherit",
-          }}>Import JSON</button>
+          <button onClick={downloadJSON} style={btnMedium}>Download JSON</button>
+          <button onClick={() => importInputRef.current?.click()} style={btnMedium}>Import JSON</button>
           <input
             ref={importInputRef}
             type="file"
@@ -129,26 +127,38 @@ export default function App() {
             style={{ display: "none" }}
             onChange={handleImport}
           />
-          <button onClick={copyJSON} style={{
-            background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
-            borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
-            fontFamily: "inherit",
-          }}>{copyLabel}</button>
-          <button onClick={resetData} style={{
-            background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
-            borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
-            fontFamily: "inherit",
-          }}>Reset data</button>
+          <button onClick={copyJSON} style={btnMedium}>{copyLabel}</button>
+          <button onClick={resetApartments} style={btnMedium}>Reset data</button>
         </div>
       </div>
 
+      {/* Listing Filter */}
+      {activeTab !== "Add" && activeTab !== "About" && (
+        <ListingFilter apartments={apartments} hiddenIds={hiddenIds} setHiddenIds={setHiddenIds} />
+      )}
+
       {/* Tab Content */}
-      {activeTab === "Compare" && <ComparisonTable apartments={apartments} onRemove={removeApartment} onDuplicate={duplicateApartment} />}
-      {activeTab === "Costs" && <CostBreakdown apartments={apartments} />}
-      {activeTab === "Scorecard" && <ScoreCard apartments={apartments} />}
+      {activeTab === "Compare" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <WeightSliders weights={weights} onChange={setWeights} compact onOpenCalculator={() => setActiveTab("Calculator")} />
+          <ComparisonTable apartments={visibleApartments} onRemove={removeApartment} onDuplicate={duplicateApartment} weights={weights} brackets={brackets} />
+          <Timeline apartments={visibleApartments} onUpdateDates={updateApartmentDates} />
+        </div>
+      )}
+      {activeTab === "Costs" && <CostBreakdown apartments={visibleApartments} />}
+      {activeTab === "Scorecard" && <ScoreCard apartments={visibleApartments} weights={weights} brackets={brackets} onWeightsChange={setWeights} />}
+      {activeTab === "Calculator" && (
+        <Calculator
+          apartments={visibleApartments}
+          weights={weights}
+          brackets={brackets}
+          onWeightsChange={setWeights}
+          onBracketsChange={setBrackets}
+        />
+      )}
       {activeTab === "Map" && (
         <Suspense fallback={<div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>Loading map...</div>}>
-          <MapView apartments={apartments} />
+          <MapView apartments={visibleApartments} />
         </Suspense>
       )}
       {activeTab === "Add" && <AddListing onAdd={addApartment} />}

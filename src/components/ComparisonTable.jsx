@@ -1,17 +1,13 @@
 import { useState, useEffect } from "react";
 import Badge, { BoolBadge } from "./Badge.jsx";
 import SummaryCards from "./SummaryCards.jsx";
-import Timeline from "./Timeline.jsx";
-
-const fmt = (n) => n != null ? `$${n.toLocaleString()}` : "N/A";
+import { fmt } from "../lib/format.js";
+import { totalMonthlyCost, moveInCost } from "../lib/costs.js";
+import { GREEN_TINT, RED_TINT } from "../lib/constants.js";
+import { btnSmall } from "../lib/styles.js";
 
 // --- Highlighting helpers ---
 
-const GREEN_TINT = "rgba(5, 150, 105, 0.08)";
-const RED_TINT   = "rgba(220, 38, 38, 0.08)";
-
-// bestFn for "lower is better" numeric rows.
-// valueFn(apartment) => number|null. Null/non-finite values are excluded.
 function lowerIsBetter(valueFn) {
   return (apartments) => {
     const entries = apartments
@@ -28,7 +24,6 @@ function lowerIsBetter(valueFn) {
   };
 }
 
-// bestFn for "higher is better" numeric rows.
 function higherIsBetter(valueFn) {
   return (apartments) => {
     const entries = apartments
@@ -45,8 +40,6 @@ function higherIsBetter(valueFn) {
   };
 }
 
-// bestFn for "boolean true is better" rows.
-// valueFn(apartment) => boolean|null. Only highlights when values are mixed (some true, some false).
 function boolTrueIsBetter(valueFn) {
   return (apartments) => {
     const entries = apartments
@@ -62,7 +55,6 @@ function boolTrueIsBetter(valueFn) {
   };
 }
 
-// Given a row and the full apartments array, returns a Map<apartmentId, {background}>.
 function computeTints(row, apartments) {
   if (!row.bestFn) return new Map();
   const { bestIds, worstIds } = row.bestFn(apartments) ?? {};
@@ -82,21 +74,19 @@ const SECTIONS = [
     rows: [
       {
         label: "Monthly Rent",
-        render: (a) => <Badge color="#059669">{fmt(a.financials.monthly_rent)}/mo</Badge>,
+        render: (a) => `${fmt(a.financials.monthly_rent)}/mo`,
         bestFn: lowerIsBetter((a) => a.financials.monthly_rent),
       },
       { label: "Utilities Included", render: (a) => <BoolBadge value={a.financials.utilities_included} /> },
       {
         label: "Est. Utilities",
-        render: (a) => a.financials.utilities_included
-          ? <Badge color="#059669">Included</Badge>
-          : <Badge color="#d97706">~{fmt(a.financials.est_monthly_utilities)}/mo</Badge>,
+        render: (a) => a.financials.utilities_included ? "Included" : `~${fmt(a.financials.est_monthly_utilities)}/mo`,
         bestFn: lowerIsBetter((a) => a.financials.utilities_included ? 0 : (a.financials.est_monthly_utilities ?? null)),
       },
       {
         label: "Total Monthly Cost",
-        render: (a) => <Badge color="#059669">{fmt(a.financials.monthly_rent + (a.financials.est_monthly_utilities || 0))}/mo</Badge>,
-        bestFn: lowerIsBetter((a) => a.financials.monthly_rent + (a.financials.est_monthly_utilities || 0)),
+        render: (a) => `${fmt(totalMonthlyCost(a))}/mo`,
+        bestFn: lowerIsBetter(totalMonthlyCost),
       },
       {
         label: "Security Deposit",
@@ -115,13 +105,8 @@ const SECTIONS = [
       },
       {
         label: "Total Move-in Cost",
-        render: (a) => {
-          const total = a.financials.monthly_rent + a.financials.security_deposit + (a.financials.application_fee || 0) + (a.financials.cleaning_fee || 0);
-          return <Badge color="#059669">{fmt(total)}</Badge>;
-        },
-        bestFn: lowerIsBetter((a) =>
-          a.financials.monthly_rent + a.financials.security_deposit + (a.financials.application_fee || 0) + (a.financials.cleaning_fee || 0)
-        ),
+        render: (a) => fmt(moveInCost(a)),
+        bestFn: lowerIsBetter(moveInCost),
       },
     ],
   },
@@ -161,36 +146,19 @@ const SECTIONS = [
   {
     title: "Appliances",
     rows: [
-      {
-        label: "Washer/Dryer",
-        render: (a) => <BoolBadge value={a.appliances.washer_dryer} />,
-        bestFn: boolTrueIsBetter((a) => a.appliances.washer_dryer),
-      },
-      {
-        label: "Dishwasher",
-        render: (a) => <BoolBadge value={a.appliances.dishwasher} />,
-        bestFn: boolTrueIsBetter((a) => a.appliances.dishwasher),
-      },
-      {
-        label: "Fireplace",
-        render: (a) => <BoolBadge value={a.appliances.fireplace} />,
-        bestFn: boolTrueIsBetter((a) => a.appliances.fireplace),
-      },
+      { label: "Washer/Dryer", render: (a) => <BoolBadge value={a.appliances.washer_dryer} />, bestFn: boolTrueIsBetter((a) => a.appliances.washer_dryer) },
+      { label: "Dishwasher", render: (a) => <BoolBadge value={a.appliances.dishwasher} />, bestFn: boolTrueIsBetter((a) => a.appliances.dishwasher) },
+      { label: "Fireplace", render: (a) => <BoolBadge value={a.appliances.fireplace} />, bestFn: boolTrueIsBetter((a) => a.appliances.fireplace) },
       { label: "Water Softener/RO", render: (a) => <BoolBadge value={a.appliances.water_softener} /> },
     ],
   },
   {
     title: "Amenities",
     rows: [
-      {
-        label: "A/C",
-        render: (a) => <BoolBadge value={a.amenities.ac} />,
-        bestFn: boolTrueIsBetter((a) => a.amenities.ac),
-      },
+      { label: "A/C", render: (a) => <BoolBadge value={a.amenities.ac} />, bestFn: boolTrueIsBetter((a) => a.amenities.ac) },
       {
         label: "Internet/WiFi",
         render: (a) => <BoolBadge value={a.amenities.internet} />,
-        // internet can be a string (e.g. "fiber") -- treat any truthy non-false as true
         bestFn: boolTrueIsBetter((a) => {
           const v = a.amenities.internet;
           if (v == null) return null;
@@ -199,11 +167,7 @@ const SECTIONS = [
       },
       { label: "TV", render: (a) => <BoolBadge value={a.amenities.tv} /> },
       { label: "Wheelchair Accessible", render: (a) => <BoolBadge value={a.amenities.wheelchair_accessible} /> },
-      {
-        label: "Near Transit",
-        render: (a) => <BoolBadge value={a.amenities.near_transit} />,
-        bestFn: boolTrueIsBetter((a) => a.amenities.near_transit),
-      },
+      { label: "Near Transit", render: (a) => <BoolBadge value={a.amenities.near_transit} />, bestFn: boolTrueIsBetter((a) => a.amenities.near_transit) },
       { label: "Community Amenities", render: (a) => a.amenities.community_amenities?.length
         ? a.amenities.community_amenities.map((c, i) => <Badge key={i} color="#d97706">{c}</Badge>)
         : <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>None listed</span>
@@ -213,11 +177,7 @@ const SECTIONS = [
   {
     title: "House Rules",
     rows: [
-      {
-        label: "Pets Allowed",
-        render: (a) => <BoolBadge value={a.rules.pets_allowed} />,
-        bestFn: boolTrueIsBetter((a) => a.rules.pets_allowed),
-      },
+      { label: "Pets Allowed", render: (a) => <BoolBadge value={a.rules.pets_allowed} />, bestFn: boolTrueIsBetter((a) => a.rules.pets_allowed) },
       { label: "Smoking", render: (a) => <BoolBadge value={a.rules.smoking} trueLabel="Allowed" falseLabel="Not Allowed" /> },
       { label: "Max Occupancy", render: (a) => a.rules.max_occupancy || "N/A" },
     ],
@@ -229,12 +189,12 @@ const SECTIONS = [
       { label: "Neighborhood", render: (a) => a.location.neighborhood },
       {
         label: "Distance to LLNL",
-        render: (a) => <Badge color="#2563eb">{a.location.dist_llnl_miles} mi</Badge>,
+        render: (a) => `${a.location.dist_llnl_miles} mi`,
         bestFn: lowerIsBetter((a) => a.location.dist_llnl_miles ?? null),
       },
       {
         label: "Drive Time to LLNL",
-        render: (a) => <Badge color="#2563eb">~{a.location.drive_time_llnl_min} min</Badge>,
+        render: (a) => `~${a.location.drive_time_llnl_min} min`,
         bestFn: lowerIsBetter((a) => a.location.drive_time_llnl_min ?? null),
       },
       { label: "Nearest Grocery", render: (a) => a.location.nearest_grocery?.map((g, i) =>
@@ -287,8 +247,7 @@ const SECTIONS = [
         render: (a) => {
           const s = a.remote_work?.score;
           if (!s) return "N/A";
-          const color = s >= 4 ? "#059669" : s >= 3 ? "#d97706" : "#dc2626";
-          return <Badge color={color}>{s}/5</Badge>;
+          return `${s}/5`;
         },
         bestFn: higherIsBetter((a) => a.remote_work?.score ?? null),
       },
@@ -307,7 +266,7 @@ function loadCollapsed() {
       if (Array.isArray(arr)) return new Set(arr);
     }
   } catch (_) { /* ignore */ }
-  return new Set(); // default: all expanded
+  return new Set();
 }
 
 function saveCollapsed(set) {
@@ -316,7 +275,7 @@ function saveCollapsed(set) {
   } catch (_) { /* ignore */ }
 }
 
-export default function ComparisonTable({ apartments, onRemove, onDuplicate }) {
+export default function ComparisonTable({ apartments, onRemove, onDuplicate, weights, brackets }) {
   const [collapsed, setCollapsed] = useState(() => loadCollapsed());
 
   useEffect(() => {
@@ -347,7 +306,7 @@ export default function ComparisonTable({ apartments, onRemove, onDuplicate }) {
 
   return (
     <div>
-      <SummaryCards apartments={apartments} />
+      <SummaryCards apartments={apartments} weights={weights} brackets={brackets} />
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
         <button onClick={toggleAll} style={{
           background: "none", border: "1px solid var(--border)", color: "var(--text-secondary)",
@@ -372,24 +331,14 @@ export default function ComparisonTable({ apartments, onRemove, onDuplicate }) {
                   borderBottom: "2px solid var(--border)", minWidth: 240,
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: `hsl(${i * 137}deg, 55%, 50%)`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0,
-                    }}>{i + 1}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{a.name}</div>
-                      <div style={{ color: "var(--text-muted)", fontSize: 11 }}>FF#{a.listing_id}</div>
+                      <div style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                        {a.platform && `${a.platform}`}{a.listing_id && ` #${a.listing_id}`}
+                      </div>
                     </div>
-                    <button onClick={() => onDuplicate(a.id)} title="Duplicate listing" style={{
-                      background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
-                      borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontSize: 12,
-                    }}>dup</button>
-                    <button onClick={() => onRemove(a.id)} title="Remove listing" style={{
-                      background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
-                      borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontSize: 12,
-                    }}>x</button>
+                    <button onClick={() => onDuplicate(a.id)} title="Duplicate listing" style={btnSmall}>dup</button>
+                    <button onClick={() => onRemove(a.id)} title="Remove listing" style={btnSmall}>x</button>
                   </div>
                 </th>
               ))}
@@ -407,7 +356,7 @@ export default function ComparisonTable({ apartments, onRemove, onDuplicate }) {
                   >
                     <td colSpan={apartments.length + 1} style={{
                       padding: "12px 16px", background: "var(--bg-header)",
-                      color: "var(--accent-blue)", fontSize: 11, fontWeight: 700,
+                      color: "var(--text-secondary)", fontSize: 11, fontWeight: 700,
                       letterSpacing: 1, borderBottom: "1px solid var(--border)",
                       borderTop: "1px solid var(--border)",
                       userSelect: "none",
@@ -418,7 +367,7 @@ export default function ComparisonTable({ apartments, onRemove, onDuplicate }) {
                           width: 0, height: 0,
                           borderLeft: "5px solid transparent",
                           borderRight: "5px solid transparent",
-                          borderTop: "6px solid var(--accent-blue)",
+                          borderTop: "6px solid var(--text-secondary)",
                           transition: "transform 0.2s ease",
                           transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
                           flexShrink: 0,
@@ -426,19 +375,12 @@ export default function ComparisonTable({ apartments, onRemove, onDuplicate }) {
                         {section.title.toUpperCase()}
                         {isCollapsed && (
                           <span style={{ color: "var(--text-muted)", fontWeight: 400, letterSpacing: 0, marginLeft: 4 }}>
-                            ({section.rows.length} rows hidden)
+                            ({section.rows.length} rows)
                           </span>
                         )}
                       </div>
                     </td>
                   </tr>
-                  {!isCollapsed && section.title === "Lease Terms" && (
-                    <tr key="lease-timeline">
-                      <td colSpan={apartments.length + 1} style={{ padding: "4px 16px 0 16px", background: "var(--bg-row-even)" }}>
-                        <Timeline apartments={apartments} />
-                      </td>
-                    </tr>
-                  )}
                   {!isCollapsed && section.rows.map((row, ri) => {
                     const tints = computeTints(row, apartments);
                     const rowBg = ri % 2 === 0 ? "var(--bg-row-even)" : "var(--bg-row-odd)";
@@ -469,7 +411,6 @@ export default function ComparisonTable({ apartments, onRemove, onDuplicate }) {
                 </>
               );
             })}
-            {/* Notes row */}
             <tr>
               <td style={{
                 padding: "12px 16px", color: "var(--text-secondary)", fontSize: 12, fontWeight: 500,

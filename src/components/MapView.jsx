@@ -1,14 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import manifest from "../data/manifest.json";
+import { cardStyle, btnSmall } from "../lib/styles.js";
 
 const LLNL = manifest.target_location;
 
-// Tri-Valley / East Bay bounding box — prevents panning outside the region
 const TRI_VALLEY_BOUNDS = [
-  [-122.20, 37.45], // SW: west of Castro Valley, south of Fremont
-  [-121.50, 37.90], // NE: east of Altamont Pass, north of Dublin ridge
+  [-122.20, 37.45],
+  [-121.50, 37.90],
 ];
 
 const CATEGORY_COLORS = {
@@ -17,6 +17,10 @@ const CATEGORY_COLORS = {
   grocery: "#059669",
   hospital: "#7c3aed",
   transit: "#d97706",
+  restaurant: "#f97316",
+  park: "#22c55e",
+  gym: "#8b5cf6",
+  shopping: "#ec4899",
   area: "#64748b",
   landmark: "#0891b2",
 };
@@ -25,11 +29,17 @@ const CATEGORY_LABELS = {
   apartment: "Apartments",
   work: "LLNL",
   grocery: "Grocery",
+  restaurant: "Restaurants",
+  park: "Parks",
+  gym: "Gyms",
+  shopping: "Shopping",
   hospital: "Hospital",
   transit: "Transit",
   area: "Areas",
   landmark: "Landmarks",
 };
+
+const FILTERABLE_CATEGORIES = ["grocery", "restaurant", "park", "gym", "shopping", "hospital", "transit", "area", "landmark"];
 
 function createMarkerEl(color, size = 14) {
   const el = document.createElement("div");
@@ -50,10 +60,42 @@ function popupHtml(name, detail, color) {
   </div>`;
 }
 
+function haversineMiles(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function geoCircle(center, radiusMiles, steps = 64) {
+  const km = radiusMiles * 1.60934;
+  const coords = [];
+  for (let i = 0; i <= steps; i++) {
+    const angle = (i / steps) * 2 * Math.PI;
+    const lat = center[1] + (km * Math.sin(angle)) / 111.32;
+    const lng = center[0] + (km * Math.cos(angle)) / (111.32 * Math.cos(center[1] * Math.PI / 180));
+    coords.push([lng, lat]);
+  }
+  return { type: "Feature", geometry: { type: "Polygon", coordinates: [coords] } };
+}
+
+const EMPTY_FC = { type: "FeatureCollection", features: [] };
+
 export default function MapView({ apartments }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
+  const markersRef = useRef({ poi: [], apt: [] });
 
+  const [focusAptId, setFocusAptId] = useState("");
+  const [radius, setRadius] = useState(2);
+  const [hiddenCats, setHiddenCats] = useState(new Set());
+
+  const focusApt = apartments.find((a) => a.id === focusAptId);
+
+  // Initialize map
   useEffect(() => {
     if (mapRef.current) return;
 
@@ -71,7 +113,22 @@ export default function MapView({ apartments }) {
     mapRef.current = map;
 
     map.on("load", () => {
-      // LLNL marker (larger, red)
+      // Radius circle layer
+      map.addSource("radius-circle", { type: "geojson", data: EMPTY_FC });
+      map.addLayer({
+        id: "radius-circle-fill",
+        type: "fill",
+        source: "radius-circle",
+        paint: { "fill-color": "#2563eb", "fill-opacity": 0.08 },
+      });
+      map.addLayer({
+        id: "radius-circle-outline",
+        type: "line",
+        source: "radius-circle",
+        paint: { "line-color": "#2563eb", "line-width": 2, "line-dasharray": [3, 2] },
+      });
+
+      // LLNL marker
       const llnlEl = createMarkerEl(CATEGORY_COLORS.work, 20);
       new maplibregl.Marker({ element: llnlEl })
         .setLngLat([LLNL.lng, LLNL.lat])
@@ -80,53 +137,48 @@ export default function MapView({ apartments }) {
         ))
         .addTo(map);
 
-      // Apartment markers (blue, large)
+      // Apartment markers
       apartments.forEach((a) => {
-        const lat = a.location.lat;
-        const lng = a.location.lng;
-        if (lat == null || lng == null) return;
-
+        if (a.location.lat == null || a.location.lng == null) return;
         const el = createMarkerEl(CATEGORY_COLORS.apartment, 18);
-        const rent = `$${a.financials.monthly_rent.toLocaleString()}/mo`;
         const detail = [
-          rent,
+          `$${a.financials.monthly_rent.toLocaleString()}/mo`,
           `${a.space.sqft?.toLocaleString()} sq ft`,
           `${a.location.dist_llnl_miles} mi to LLNL`,
           `${a.space.bedrooms}BR/${a.space.bathrooms}BA`,
         ].join("<br>");
-
-        new maplibregl.Marker({ element: el })
-          .setLngLat([lng, lat])
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([a.location.lng, a.location.lat])
           .setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(
             popupHtml(a.name, detail, CATEGORY_COLORS.apartment)
           ))
           .addTo(map);
+        markersRef.current.apt.push(marker);
       });
 
-      // POI markers from manifest
+      // POI markers
       manifest.points_of_interest.forEach((poi) => {
-        if (poi.category === "work") return; // Already added LLNL above
+        if (poi.category === "work") return;
         const color = CATEGORY_COLORS[poi.category] || "#64748b";
         const el = createMarkerEl(color, 10);
-
-        new maplibregl.Marker({ element: el })
+        const marker = new maplibregl.Marker({ element: el })
           .setLngLat([poi.lng, poi.lat])
           .setPopup(new maplibregl.Popup({ offset: 8 }).setHTML(
-            popupHtml(poi.name, poi.category, color)
+            popupHtml(poi.name, CATEGORY_LABELS[poi.category] || poi.category, color)
           ))
           .addTo(map);
+        marker._poiCategory = poi.category;
+        marker._poiLat = poi.lat;
+        marker._poiLng = poi.lng;
+        markersRef.current.poi.push(marker);
       });
 
-      // Fit bounds to show all points
+      // Fit bounds
       const bounds = new maplibregl.LngLatBounds();
       bounds.extend([LLNL.lng, LLNL.lat]);
       apartments.forEach((a) => {
-        if (a.location.lat != null && a.location.lng != null) {
+        if (a.location.lat != null && a.location.lng != null)
           bounds.extend([a.location.lng, a.location.lat]);
-        }
-      });
-      manifest.points_of_interest.forEach((poi) => {
-        bounds.extend([poi.lng, poi.lat]);
       });
       map.fitBounds(bounds, { padding: 50, maxZoom: 13 });
     });
@@ -134,11 +186,122 @@ export default function MapView({ apartments }) {
     return () => {
       map.remove();
       mapRef.current = null;
+      markersRef.current = { poi: [], apt: [] };
     };
   }, [apartments]);
 
+  // Update radius circle and zoom when focus/radius changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const source = map.getSource("radius-circle");
+    if (!source) return;
+
+    if (focusApt && focusApt.location.lat != null && focusApt.location.lng != null) {
+      const center = [focusApt.location.lng, focusApt.location.lat];
+      source.setData(geoCircle(center, radius));
+      map.flyTo({ center, zoom: 13, duration: 800 });
+    } else {
+      source.setData(EMPTY_FC);
+    }
+  }, [focusApt, radius]);
+
+  // Toggle marker visibility for hidden categories
+  useEffect(() => {
+    markersRef.current.poi.forEach((m) => {
+      const el = m.getElement();
+      el.style.display = hiddenCats.has(m._poiCategory) ? "none" : "";
+    });
+  }, [hiddenCats]);
+
+  const toggleCat = (cat) => {
+    setHiddenCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
+
+  // Compute nearby POIs when focused
+  const nearbyPois = focusApt && focusApt.location.lat != null
+    ? manifest.points_of_interest
+        .filter((poi) => poi.category !== "work" && !hiddenCats.has(poi.category))
+        .map((poi) => ({
+          ...poi,
+          dist: haversineMiles(focusApt.location.lat, focusApt.location.lng, poi.lat, poi.lng),
+        }))
+        .filter((poi) => poi.dist <= radius)
+        .sort((a, b) => a.dist - b.dist)
+    : [];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Controls */}
+      <div style={{ ...cardStyle, padding: "16px 24px", display: "flex", flexWrap: "wrap", gap: 20, alignItems: "center" }}>
+        {/* Focus selector */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <label style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>Focus on:</label>
+          <select
+            value={focusAptId}
+            onChange={(e) => setFocusAptId(e.target.value)}
+            style={{
+              background: "var(--bg-primary)", border: "1px solid var(--border)",
+              borderRadius: 6, padding: "6px 10px", fontSize: 12, color: "var(--text-primary)",
+              fontFamily: "inherit",
+            }}
+          >
+            <option value="">All apartments</option>
+            {apartments.filter((a) => a.location.lat != null).map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Radius slider */}
+        {focusAptId && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>
+              Radius: {radius} mi
+            </label>
+            <input
+              type="range"
+              min={0.5}
+              max={5}
+              step={0.5}
+              value={radius}
+              onChange={(e) => setRadius(Number(e.target.value))}
+              style={{ width: 120, accentColor: "var(--accent-blue)" }}
+            />
+          </div>
+        )}
+
+        {/* Category filters */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginLeft: "auto" }}>
+          {FILTERABLE_CATEGORIES.map((cat) => {
+            const hidden = hiddenCats.has(cat);
+            return (
+              <button
+                key={cat}
+                onClick={() => toggleCat(cat)}
+                style={{
+                  ...btnSmall,
+                  opacity: hidden ? 0.4 : 1,
+                  borderColor: hidden ? "var(--border)" : CATEGORY_COLORS[cat],
+                  color: hidden ? "var(--text-muted)" : CATEGORY_COLORS[cat],
+                  fontSize: 11,
+                  transition: "opacity 0.15s",
+                }}
+              >
+                {CATEGORY_LABELS[cat]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Map */}
       <div style={{
         background: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 8, overflow: "hidden", boxShadow: "var(--shadow-sm)",
@@ -146,32 +309,39 @@ export default function MapView({ apartments }) {
         <div ref={containerRef} style={{ width: "100%", height: 500 }} />
       </div>
 
-      {/* Legend */}
-      <div style={{
-        background: "var(--bg-card)", border: "1px solid var(--border)",
-        borderRadius: 8, padding: "16px 24px", boxShadow: "var(--shadow-sm)",
-        display: "flex", gap: 20, flexWrap: "wrap", fontSize: 13,
-      }}>
-        {Object.entries(CATEGORY_LABELS).map(([cat, label]) => (
-          <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{
-              width: cat === "apartment" || cat === "work" ? 14 : 10,
-              height: cat === "apartment" || cat === "work" ? 14 : 10,
-              borderRadius: "50%",
-              background: CATEGORY_COLORS[cat],
-              border: "2px solid #fff",
-              boxShadow: "0 0 0 1px var(--border)",
-            }} />
-            <span style={{ color: "var(--text-secondary)" }}>{label}</span>
+      {/* Nearby POIs (when focused) */}
+      {focusApt && nearbyPois.length > 0 && (
+        <div style={cardStyle}>
+          <h3 style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 600, marginBottom: 12 }}>
+            Within {radius} mi of {focusApt.name}
+          </h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 8 }}>
+            {nearbyPois.map((poi) => (
+              <div key={poi.name} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                background: "var(--bg-primary)", border: "1px solid var(--border)",
+                borderRadius: 6, padding: "8px 12px",
+              }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                  background: CATEGORY_COLORS[poi.category] || "#64748b",
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {poi.name}
+                  </div>
+                </div>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>
+                  {poi.dist.toFixed(1)} mi
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Apartment distances */}
-      <div style={{
-        background: "var(--bg-card)", border: "1px solid var(--border)",
-        borderRadius: 8, padding: 24, boxShadow: "var(--shadow-sm)",
-      }}>
+      {/* Distance cards */}
+      <div style={cardStyle}>
         <h3 style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 600, marginBottom: 16 }}>
           Distance to LLNL
         </h3>

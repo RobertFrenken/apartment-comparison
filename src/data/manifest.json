@@ -16,19 +16,55 @@
   },
   "points_of_interest": [
     { "name": "LLNL Main Gate", "lat": 37.6876, "lng": -121.7054, "category": "work", "icon": "briefcase" },
-    { "name": "Trader Joe's (Stanley Blvd)", "lat": 37.6766, "lng": -121.7568, "category": "grocery", "icon": "shopping-cart" },
-    { "name": "Safeway (First St)", "lat": 37.6813, "lng": -121.7686, "category": "grocery", "icon": "shopping-cart" },
-    { "name": "Safeway (Bernal Ave, Pleasanton)", "lat": 37.6625, "lng": -121.8747, "category": "grocery", "icon": "shopping-cart" },
-    { "name": "Nob Hill Foods", "lat": 37.6778, "lng": -121.7541, "category": "grocery", "icon": "shopping-cart" },
-    { "name": "Lucky (Portola Ave)", "lat": 37.6943, "lng": -121.7917, "category": "grocery", "icon": "shopping-cart" },
-    { "name": "ValleyCare Medical Center", "lat": 37.6699, "lng": -121.8004, "category": "hospital", "icon": "hospital" },
-    { "name": "Kaiser Livermore", "lat": 37.6968, "lng": -121.7764, "category": "hospital", "icon": "hospital" },
-    { "name": "Stanford Health Care - ValleyCare", "lat": 37.6588, "lng": -121.8759, "category": "hospital", "icon": "hospital" },
-    { "name": "Downtown Livermore", "lat": 37.6819, "lng": -121.7680, "category": "area", "icon": "map-pin" },
-    { "name": "Downtown Pleasanton", "lat": 37.6625, "lng": -121.8747, "category": "area", "icon": "map-pin" },
-    { "name": "Alameda County Fairgrounds", "lat": 37.6594, "lng": -121.8851, "category": "landmark", "icon": "star" },
-    { "name": "BART Pleasanton Station", "lat": 37.6996, "lng": -121.8990, "category": "transit", "icon": "train" },
-    { "name": "ACE Livermore Station", "lat": 37.6898, "lng": -121.7925, "category": "transit", "icon": "train" }
+
+    { "name": "Trader Joe's (Stanley Blvd)", "lat": 37.6766, "lng": -121.7568, "category": "grocery" },
+    { "name": "Safeway (First St)", "lat": 37.6813, "lng": -121.7686, "category": "grocery" },
+    { "name": "Safeway (Bernal Ave, Pleasanton)", "lat": 37.6625, "lng": -121.8747, "category": "grocery" },
+    { "name": "Nob Hill Foods", "lat": 37.6778, "lng": -121.7541, "category": "grocery" },
+    { "name": "Lucky (Portola Ave)", "lat": 37.6943, "lng": -121.7917, "category": "grocery" },
+    { "name": "Grocery Outlet (Livermore)", "lat": 37.6940, "lng": -121.7748, "category": "grocery" },
+    { "name": "Whole Foods (Dublin)", "lat": 37.7068, "lng": -121.9260, "category": "grocery" },
+    { "name": "Costco (Livermore)", "lat": 37.7050, "lng": -121.8108, "category": "grocery" },
+
+    { "name": "In-N-Out Burger", "lat": 37.6993, "lng": -121.7640, "category": "restaurant" },
+    { "name": "Uncle Yu's at the Vineyard", "lat": 37.6821, "lng": -121.7679, "category": "restaurant" },
+    { "name": "First Street Ale House", "lat": 37.6819, "lng": -121.7691, "category": "restaurant" },
+    { "name": "Posada Restaurant", "lat": 37.6817, "lng": -121.7697, "category": "restaurant" },
+    { "name": "Casa Orozco", "lat": 37.6830, "lng": -121.7655, "category": "restaurant" },
+    { "name": "Sauced BBQ & Spirits", "lat": 37.6815, "lng": -121.7704, "category": "restaurant" },
+    { "name": "Range Life", "lat": 37.6822, "lng": -121.7686, "category": "restaurant" },
+    { "name": "Handles Gastropub (Pleasanton)", "lat": 37.6584, "lng": -121.8753, "category": "restaurant" },
+    { "name": "Gay Nineties Pizza (Pleasanton)", "lat": 37.6580, "lng": -121.8748, "category": "restaurant" },
+    { "name": "Chipotle (Livermore)", "lat": 37.6970, "lng": -121.7640, "category": "restaurant" },
+    { "name": "Panda Express (Livermore)", "lat": 37.6988, "lng": -121.7620, "category": "restaurant" },
+
+    { "name": "ValleyCare Medical Center", "lat": 37.6699, "lng": -121.8004, "category": "hospital" },
+    { "name": "Kaiser Livermore", "lat": 37.6968, "lng": -121.7764, "category": "hospital" },
+    { "name": "Stanford Health Care - ValleyCare", "lat": 37.6588, "lng": -121.8759, "category": "hospital" },
+
+    { "name": "Sycamore Grove Park", "lat": 37.6326, "lng": -121.7376, "category": "park" },
+    { "name": "Del Valle Regional Park", "lat": 37.6100, "lng": -121.7200, "category": "park" },
+    { "name": "Shadow Cliffs Regional Recreation Area", "lat": 37.6627, "lng": -121.8563, "category": "park" },
+    { "name": "Pleasanton Ridge Regional Park", "lat": 37.6328, "lng": -121.8907, "category": "park" },
+    { "name": "Robertson Park (Livermore)", "lat": 37.6880, "lng": -121.7780, "category": "park" },
+    { "name": "Holdener Park (Livermore)", "lat": 37.6750, "lng": -121.7420, "category": "park" },
+
+    { "name": "24 Hour Fitness (Livermore)", "lat": 37.6960, "lng": -121.7750, "category": "gym" },
+    { "name": "Planet Fitness (Livermore)", "lat": 37.7025, "lng": -121.7785, "category": "gym" },
+    { "name": "CrossFit Livermore", "lat": 37.6930, "lng": -121.7640, "category": "gym" },
+
+    { "name": "Livermore Premium Outlets", "lat": 37.7024, "lng": -121.8284, "category": "shopping" },
+    { "name": "Stoneridge Shopping Center", "lat": 37.6939, "lng": -121.9181, "category": "shopping" },
+    { "name": "Downtown Livermore Shops", "lat": 37.6819, "lng": -121.7680, "category": "shopping" },
+
+    { "name": "Downtown Livermore", "lat": 37.6819, "lng": -121.7680, "category": "area" },
+    { "name": "Downtown Pleasanton", "lat": 37.6625, "lng": -121.8747, "category": "area" },
+    { "name": "Alameda County Fairgrounds", "lat": 37.6594, "lng": -121.8851, "category": "landmark" },
+
+    { "name": "BART Dublin/Pleasanton Station", "lat": 37.7017, "lng": -121.8992, "category": "transit" },
+    { "name": "ACE Livermore Station", "lat": 37.6898, "lng": -121.7925, "category": "transit" },
+    { "name": "LAVTA Bus Route 10 (Livermore)", "lat": 37.6815, "lng": -121.7690, "category": "transit" },
+    { "name": "LAVTA Bus Route 14 (LLNL)", "lat": 37.6876, "lng": -121.7054, "category": "transit" }
   ],
   "sources": [
     { "platform": "FurnishedFinder", "url": "https://www.furnishedfinder.com", "note": "Primary source; requires login to view listings" }

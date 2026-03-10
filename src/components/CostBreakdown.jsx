@@ -1,5 +1,8 @@
-const fmt = (n) => `$${n.toLocaleString()}`;
-const COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626", "#0891b2"];
+import { fmt } from "../lib/format.js";
+import { COLORS } from "../lib/constants.js";
+import { cardStyle, sectionHeading, thStyle } from "../lib/styles.js";
+import { moveInCost } from "../lib/costs.js";
+import { costPerPerson } from "../lib/scoring.js";
 
 function Bar({ value, max, color, label }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
@@ -27,7 +30,7 @@ export default function CostBreakdown({ apartments }) {
       ? Math.round((new Date(a.lease.available_until) - new Date(a.lease.available_from)) / 86400000)
       : 90;
     const stayMonths = stayDays / 30;
-    const moveIn = rent + a.financials.security_deposit + (a.financials.application_fee || 0) + (a.financials.cleaning_fee || 0);
+    const moveIn = moveInCost(a);
     const totalStay = moveIn + totalMonthly * (stayMonths - 1);
     return { ...a, rent, utils, monthly, gas, totalMonthly, stayDays, stayMonths, moveIn, totalStay };
   });
@@ -38,11 +41,8 @@ export default function CostBreakdown({ apartments }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Monthly Comparison */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: 24, boxShadow: "var(--shadow-sm)" }}>
-        <h3 style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 600, marginBottom: 20 }}>
-          Monthly Cost Breakdown
-        </h3>
+      <div style={cardStyle}>
+        <h3 style={sectionHeading}>Monthly Cost Breakdown</h3>
         {costs.map((c, i) => (
           <div key={c.id} style={{ marginBottom: 24 }}>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: COLORS[i % COLORS.length] }}>
@@ -58,16 +58,15 @@ export default function CostBreakdown({ apartments }) {
         ))}
       </div>
 
-      {/* Move-in & Total */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: 24, boxShadow: "var(--shadow-sm)" }}>
-          <h3 style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 600, marginBottom: 16 }}>Move-in Cost</h3>
+        <div style={cardStyle}>
+          <h3 style={{ ...sectionHeading, marginBottom: 16 }}>Move-in Cost</h3>
           {costs.map((c, i) => (
             <Bar key={c.id} label={c.name.split(" ")[0]} value={c.moveIn} max={maxMoveIn} color={COLORS[i % COLORS.length]} />
           ))}
         </div>
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: 24, boxShadow: "var(--shadow-sm)" }}>
-          <h3 style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 600, marginBottom: 16 }}>
+        <div style={cardStyle}>
+          <h3 style={{ ...sectionHeading, marginBottom: 16 }}>
             Total Stay Cost ({costs[0]?.stayDays} days)
           </h3>
           {costs.map((c, i) => (
@@ -76,15 +75,14 @@ export default function CostBreakdown({ apartments }) {
         </div>
       </div>
 
-      {/* Summary Table */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: 24, boxShadow: "var(--shadow-sm)" }}>
-        <h3 style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 600, marginBottom: 16 }}>Cost Summary</h3>
+      <div style={cardStyle}>
+        <h3 style={{ ...sectionHeading, marginBottom: 16 }}>Cost Summary</h3>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: "10px 12px", color: "var(--text-secondary)", borderBottom: "2px solid var(--border)", fontWeight: 500 }}>Metric</th>
+              <th style={thStyle}>Metric</th>
               {costs.map((c, i) => (
-                <th key={c.id} style={{ textAlign: "right", padding: "10px 12px", color: COLORS[i % COLORS.length], borderBottom: "2px solid var(--border)", fontWeight: 600 }}>
+                <th key={c.id} style={{ ...thStyle, textAlign: "right", color: COLORS[i % COLORS.length], fontWeight: 600 }}>
                   {c.name}
                 </th>
               ))}
@@ -96,6 +94,7 @@ export default function CostBreakdown({ apartments }) {
               ["+ Utilities", (c) => c.utils ? fmt(c.utils) : "Included"],
               ["+ Gas/Commute", (c) => fmt(Math.round(c.gas))],
               ["= Monthly Total", (c) => fmt(Math.round(c.totalMonthly))],
+              ["Cost / Person", (c) => fmt(costPerPerson(c))],
               ["Move-in Cost", (c) => fmt(c.moveIn)],
               [`Total Stay (${costs[0]?.stayDays}d)`, (c) => fmt(Math.round(c.totalStay))],
               ["Cost / day", (c) => fmt(Math.round(c.totalStay / c.stayDays))],
