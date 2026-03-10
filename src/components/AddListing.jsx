@@ -8,7 +8,7 @@ const EMPTY = {
   status: "active",
   financials: { monthly_rent: 0, utilities_included: false, est_monthly_utilities: 0, security_deposit: 0, application_fee: 0, cleaning_fee: 0 },
   space: { sqft: 0, bedrooms: 0, bedroom_details: [], bathrooms: 0, bathroom_details: [], parking: "", outdoor_space: "", pool: false },
-  appliances: { dishwasher: false, microwave: false, fridge: false, stovetop: false, washer_dryer: "", fireplace: false, water_softener: false },
+  appliances: { dishwasher: true, microwave: true, fridge: true, stovetop: true, washer_dryer: "", fireplace: false, water_softener: false },
   amenities: { ac: "", heating: false, internet: null, tv: false, storage: false, wheelchair_accessible: null, near_transit: null, community_amenities: [] },
   rules: { pets_allowed: false, smoking: false, max_occupancy: null, max_vehicles: null },
   location: { city: "Livermore", state: "CA", zip: "", neighborhood: "", lat: null, lng: null, dist_llnl_miles: 0, drive_time_llnl_min: 0, nearest_grocery: [], nearest_hospital: null },
@@ -112,7 +112,15 @@ export default function AddListing({ onAdd }) {
           <Field label="Listing Name *"><Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. 3BR/2BA Downtown Livermore" /></Field>
           <Field label="Platform"><Input value={form.platform} onChange={(e) => set("platform", e.target.value)} /></Field>
           <Field label="Listing ID"><Input value={form.listing_id} onChange={(e) => set("listing_id", e.target.value)} placeholder="e.g. 881538_1" /></Field>
-          <Field label="URL"><Input value={form.url} onChange={(e) => set("url", e.target.value)} placeholder="https://..." style={{ width: 400 }} /></Field>
+          <Field label="URL"><Input value={form.url} onChange={(e) => {
+            const url = e.target.value;
+            set("url", url);
+            const ffMatch = url.match(/furnishedfinder\.com\/property\/(\d+(?:_\d+)?)/);
+            if (ffMatch) {
+              set("platform", "FurnishedFinder");
+              if (!form.listing_id) set("listing_id", ffMatch[1]);
+            }
+          }} placeholder="https://..." style={{ width: 400 }} /></Field>
 
           <SectionLabel>Financials</SectionLabel>
           <Field label="Monthly Rent ($)"><Input type="number" value={form.financials.monthly_rent || ""} onChange={(e) => set("financials.monthly_rent", Number(e.target.value))} /></Field>
@@ -130,7 +138,12 @@ export default function AddListing({ onAdd }) {
           <SectionLabel>Location</SectionLabel>
           <Field label="Neighborhood"><Input value={form.location.neighborhood} onChange={(e) => set("location.neighborhood", e.target.value)} placeholder="e.g. Downtown Livermore" style={{ width: 340 }} /></Field>
           <Field label="ZIP"><Input value={form.location.zip} onChange={(e) => set("location.zip", e.target.value)} placeholder="94550" /></Field>
-          <Field label="Distance to LLNL (mi)"><Input type="number" value={form.location.dist_llnl_miles || ""} onChange={(e) => set("location.dist_llnl_miles", Number(e.target.value))} /></Field>
+          <Field label="Distance to LLNL (mi)"><Input type="number" value={form.location.dist_llnl_miles || ""} onChange={(e) => {
+            const miles = Number(e.target.value);
+            set("location.dist_llnl_miles", miles);
+            set("commute.one_way_miles", miles);
+            if (!form.commute.est_monthly_gas) set("commute.est_monthly_gas", Math.round(miles * 2 * 22 * 0.21 * 100) / 100);
+          }} /></Field>
           <Field label="Drive Time (min)"><Input type="number" value={form.location.drive_time_llnl_min || ""} onChange={(e) => set("location.drive_time_llnl_min", Number(e.target.value))} /></Field>
 
           <SectionLabel>Rules & Amenities</SectionLabel>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, lazy, Suspense } from "react";
 import "./index.css";
 import initialApartments from "./data/apartments.json";
 import ComparisonTable from "./components/ComparisonTable.jsx";
@@ -7,7 +7,9 @@ import ScoreCard from "./components/ScoreCard.jsx";
 import AddListing from "./components/AddListing.jsx";
 import About from "./components/About.jsx";
 
-const TABS = ["Compare", "Costs", "Scorecard", "Add", "About"];
+const MapView = lazy(() => import("./components/MapView.jsx"));
+
+const TABS = ["Compare", "Costs", "Scorecard", "Map", "Add", "About"];
 
 export default function App() {
   const [apartments, setApartments] = useState(() => {
@@ -15,6 +17,8 @@ export default function App() {
     return saved ? JSON.parse(saved) : initialApartments;
   });
   const [activeTab, setActiveTab] = useState("Compare");
+  const [copyLabel, setCopyLabel] = useState("Copy JSON");
+  const importInputRef = useRef(null);
 
   const save = (updated) => {
     setApartments(updated);
@@ -23,10 +27,51 @@ export default function App() {
 
   const addApartment = (apt) => save([...apartments, { ...apt, id: String(Date.now()) }]);
   const removeApartment = (id) => save(apartments.filter((a) => a.id !== id));
+  const duplicateApartment = (id) => {
+    const original = apartments.find((a) => a.id === id);
+    if (!original) return;
+    const clone = JSON.parse(JSON.stringify(original));
+    clone.name = `${clone.name} (Copy)`;
+    clone.id = String(Date.now());
+    save([...apartments, clone]);
+  };
 
   const resetData = () => {
     localStorage.removeItem("apartments");
     setApartments(initialApartments);
+  };
+
+  const downloadJSON = () => {
+    const blob = new Blob([JSON.stringify(apartments, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "apartments.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if (!Array.isArray(parsed)) throw new Error("Expected an array");
+        save(parsed);
+      } catch (err) {
+        alert(`Import failed: ${err.message}`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const copyJSON = () => {
+    navigator.clipboard.writeText(JSON.stringify(apartments, null, 2));
+    setCopyLabel("Copied!");
+    setTimeout(() => setCopyLabel("Copy JSON"), 1500);
   };
 
   return (
@@ -66,17 +111,46 @@ export default function App() {
           }}>{tab}</button>
         ))}
         <div style={{ flex: 1 }} />
-        <button onClick={resetData} style={{
-          background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
-          borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
-          fontFamily: "inherit", alignSelf: "center", marginBottom: 4,
-        }}>Reset data</button>
+        <div style={{ display: "flex", gap: 8, alignSelf: "center", marginBottom: 4 }}>
+          <button onClick={downloadJSON} style={{
+            background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
+            borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
+            fontFamily: "inherit",
+          }}>Download JSON</button>
+          <button onClick={() => importInputRef.current?.click()} style={{
+            background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
+            borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
+            fontFamily: "inherit",
+          }}>Import JSON</button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: "none" }}
+            onChange={handleImport}
+          />
+          <button onClick={copyJSON} style={{
+            background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
+            borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
+            fontFamily: "inherit",
+          }}>{copyLabel}</button>
+          <button onClick={resetData} style={{
+            background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
+            borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
+            fontFamily: "inherit",
+          }}>Reset data</button>
+        </div>
       </div>
 
       {/* Tab Content */}
-      {activeTab === "Compare" && <ComparisonTable apartments={apartments} onRemove={removeApartment} />}
+      {activeTab === "Compare" && <ComparisonTable apartments={apartments} onRemove={removeApartment} onDuplicate={duplicateApartment} />}
       {activeTab === "Costs" && <CostBreakdown apartments={apartments} />}
       {activeTab === "Scorecard" && <ScoreCard apartments={apartments} />}
+      {activeTab === "Map" && (
+        <Suspense fallback={<div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>Loading map...</div>}>
+          <MapView apartments={apartments} />
+        </Suspense>
+      )}
       {activeTab === "Add" && <AddListing onAdd={addApartment} />}
       {activeTab === "About" && <About />}
     </div>

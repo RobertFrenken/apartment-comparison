@@ -1,0 +1,146 @@
+name: New Apartment Listing
+description: Submit a furnished rental listing for review
+title: "[Listing] "
+labels: ["new-listing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for submitting a listing! Fill out the fields below and a PR will be auto-generated for review.
+        Only **Name** and **Monthly Rent** are required — leave other fields blank if unknown.
+
+  - type: input
+    id: name
+    attributes:
+      label: Listing Name
+      description: Short display name
+      placeholder: "3BR/2BA Downtown Livermore"
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Listing URL
+      description: Link to the listing (FurnishedFinder, Zillow, etc.)
+      placeholder: "https://www.furnishedfinder.com/property/123456_1"
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: "FurnishedFinder"
+
+  - type: input
+    id: monthly_rent
+    attributes:
+      label: Monthly Rent ($)
+      placeholder: "4200"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: utilities_included
+    attributes:
+      label: Utilities Included?
+      options:
+        - "Yes"
+        - "No"
+        - "Unknown"
+      default: 2
+
+  - type: input
+    id: est_utilities
+    attributes:
+      label: Estimated Monthly Utilities ($)
+      description: If utilities NOT included
+      placeholder: "175"
+
+  - type: input
+    id: security_deposit
+    attributes:
+      label: Security Deposit ($)
+      placeholder: "3000"
+
+  - type: input
+    id: sqft
+    attributes:
+      label: Square Footage
+      placeholder: "1488"
+
+  - type: input
+    id: bedrooms
+    attributes:
+      label: Bedrooms
+      placeholder: "3"
+
+  - type: input
+    id: bathrooms
+    attributes:
+      label: Bathrooms
+      placeholder: "2"
+
+  - type: input
+    id: city
+    attributes:
+      label: City
+      placeholder: "Livermore"
+
+  - type: input
+    id: zip
+    attributes:
+      label: ZIP Code
+      placeholder: "94550"
+
+  - type: input
+    id: dist_llnl_miles
+    attributes:
+      label: Distance to LLNL (miles)
+      placeholder: "3.5"
+
+  - type: input
+    id: drive_time_min
+    attributes:
+      label: Drive Time to LLNL (minutes)
+      placeholder: "9"
+
+  - type: dropdown
+    id: pets_allowed
+    attributes:
+      label: Pets Allowed?
+      options:
+        - "Yes"
+        - "No"
+        - "Unknown"
+      default: 2
+
+  - type: dropdown
+    id: wifi_included
+    attributes:
+      label: WiFi Included?
+      options:
+        - "Yes"
+        - "No"
+        - "Unknown"
+      default: 2
+
+  - type: input
+    id: available_from
+    attributes:
+      label: Available From
+      description: YYYY-MM-DD format
+      placeholder: "2026-05-22"
+
+  - type: input
+    id: available_until
+    attributes:
+      label: Available Until
+      description: YYYY-MM-DD format
+      placeholder: "2026-08-25"
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Any highlights, red flags, or additional details
+      placeholder: "Quiet neighborhood, close to downtown. No garage but has driveway..."

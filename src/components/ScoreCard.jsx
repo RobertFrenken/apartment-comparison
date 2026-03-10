@@ -1,3 +1,5 @@
+import RadarChart from "./RadarChart.jsx";
+
 const COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626", "#0891b2"];
 
 const CRITERIA = [
@@ -148,6 +150,9 @@ export default function ScoreCard({ apartments }) {
           ))}
         </div>
       </div>
+
+      {/* Radar Chart */}
+      <RadarChart apartments={apartments} />
 
       {/* Detailed Breakdown */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: 24, boxShadow: "var(--shadow-sm)" }}>

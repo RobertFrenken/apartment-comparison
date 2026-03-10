@@ -1,0 +1,36 @@
+{
+  "name": "LLNL Internship 2026 — Apartment Listings",
+  "description": "Furnished rental listings in Livermore/Pleasanton, CA for LLNL summer internship",
+  "schema_version": "1.0",
+  "data_file": "apartments.json",
+  "schema_doc": "SCHEMA.md",
+  "target_location": {
+    "name": "Lawrence Livermore National Laboratory",
+    "address": "7000 East Ave, Livermore, CA 94550",
+    "lat": 37.6876,
+    "lng": -121.7054
+  },
+  "internship_dates": {
+    "start": "2026-05-22",
+    "end": "2026-08-25"
+  },
+  "points_of_interest": [
+    { "name": "LLNL Main Gate", "lat": 37.6876, "lng": -121.7054, "category": "work", "icon": "briefcase" },
+    { "name": "Trader Joe's (Stanley Blvd)", "lat": 37.6766, "lng": -121.7568, "category": "grocery", "icon": "shopping-cart" },
+    { "name": "Safeway (First St)", "lat": 37.6813, "lng": -121.7686, "category": "grocery", "icon": "shopping-cart" },
+    { "name": "Safeway (Bernal Ave, Pleasanton)", "lat": 37.6625, "lng": -121.8747, "category": "grocery", "icon": "shopping-cart" },
+    { "name": "Nob Hill Foods", "lat": 37.6778, "lng": -121.7541, "category": "grocery", "icon": "shopping-cart" },
+    { "name": "Lucky (Portola Ave)", "lat": 37.6943, "lng": -121.7917, "category": "grocery", "icon": "shopping-cart" },
+    { "name": "ValleyCare Medical Center", "lat": 37.6699, "lng": -121.8004, "category": "hospital", "icon": "hospital" },
+    { "name": "Kaiser Livermore", "lat": 37.6968, "lng": -121.7764, "category": "hospital", "icon": "hospital" },
+    { "name": "Stanford Health Care - ValleyCare", "lat": 37.6588, "lng": -121.8759, "category": "hospital", "icon": "hospital" },
+    { "name": "Downtown Livermore", "lat": 37.6819, "lng": -121.7680, "category": "area", "icon": "map-pin" },
+    { "name": "Downtown Pleasanton", "lat": 37.6625, "lng": -121.8747, "category": "area", "icon": "map-pin" },
+    { "name": "Alameda County Fairgrounds", "lat": 37.6594, "lng": -121.8851, "category": "landmark", "icon": "star" },
+    { "name": "BART Pleasanton Station", "lat": 37.6996, "lng": -121.8990, "category": "transit", "icon": "train" },
+    { "name": "ACE Livermore Station", "lat": 37.6898, "lng": -121.7925, "category": "transit", "icon": "train" }
+  ],
+  "sources": [
+    { "platform": "FurnishedFinder", "url": "https://www.furnishedfinder.com", "note": "Primary source; requires login to view listings" }
+  ]
+}

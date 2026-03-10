@@ -1,0 +1,214 @@
+name: Create PR from Listing Issue
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  create-listing-pr:
+    if: contains(github.event.issue.labels.*.name, 'new-listing')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse issue and create listing JSON
+        uses: actions/github-script@v7
+        id: parse
+        with:
+          script: |
+            const body = context.payload.issue.body;
+            const issueNumber = context.payload.issue.number;
+
+            // Parse GitHub Issue Form responses (format: "### Label\n\nValue\n\n")
+            function parseField(label) {
+              const regex = new RegExp(`### ${label}\\s*\\n\\n([^\\n]+)`, 'i');
+              const match = body.match(regex);
+              const val = match ? match[1].trim() : '';
+              return val === '_No response_' ? '' : val;
+            }
+
+            const name = parseField('Listing Name');
+            const url = parseField('Listing URL');
+            const platform = parseField('Platform') || 'FurnishedFinder';
+            const rent = parseFloat(parseField('Monthly Rent \\(\\$\\)')) || 0;
+            const utilitiesIncluded = parseField('Utilities Included\\?');
+            const estUtilities = parseFloat(parseField('Estimated Monthly Utilities \\(\\$\\)')) || 0;
+            const deposit = parseFloat(parseField('Security Deposit \\(\\$\\)')) || 0;
+            const sqft = parseInt(parseField('Square Footage')) || null;
+            const bedrooms = parseInt(parseField('Bedrooms')) || 0;
+            const bathrooms = parseInt(parseField('Bathrooms')) || 0;
+            const city = parseField('City') || 'Livermore';
+            const zip = parseField('ZIP Code') || '';
+            const dist = parseFloat(parseField('Distance to LLNL \\(miles\\)')) || 0;
+            const driveTime = parseInt(parseField('Drive Time to LLNL \\(minutes\\)')) || 0;
+            const pets = parseField('Pets Allowed\\?');
+            const wifi = parseField('WiFi Included\\?');
+            const availFrom = parseField('Available From');
+            const availUntil = parseField('Available Until');
+            const notes = parseField('Notes');
+
+            if (!name || rent === 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: '❌ Could not parse listing — **Name** and **Monthly Rent** are required. Please edit the issue and try again.'
+              });
+              core.setFailed('Missing required fields');
+              return;
+            }
+
+            // Extract listing_id from FurnishedFinder URL
+            let listingId = '';
+            const ffMatch = url.match(/furnishedfinder\.com\/property\/(\d+(?:_\d+)?)/);
+            if (ffMatch) listingId = ffMatch[1];
+
+            // Calculate gas estimate
+            const gasEstimate = dist > 0 ? Math.round(dist * 2 * 22 * 0.21 * 100) / 100 : 0;
+
+            const listing = {
+              id: String(Date.now()),
+              name,
+              platform,
+              listing_id: listingId,
+              url: url || null,
+              added_date: new Date().toISOString().slice(0, 10),
+              status: 'active',
+              financials: {
+                monthly_rent: rent,
+                utilities_included: utilitiesIncluded === 'Yes',
+                est_monthly_utilities: utilitiesIncluded === 'Yes' ? 0 : estUtilities,
+                security_deposit: deposit,
+                application_fee: 0,
+                cleaning_fee: 0
+              },
+              space: {
+                sqft,
+                bedrooms,
+                bedroom_details: [],
+                bathrooms,
+                bathroom_details: [],
+                parking: '',
+                outdoor_space: null,
+                pool: false
+              },
+              appliances: {
+                dishwasher: true,
+                microwave: true,
+                fridge: true,
+                stovetop: true,
+                washer_dryer: '',
+                fireplace: false,
+                water_softener: false
+              },
+              amenities: {
+                ac: '',
+                heating: false,
+                internet: wifi === 'Yes' ? 'Included' : wifi === 'No' ? false : null,
+                tv: false,
+                storage: false,
+                wheelchair_accessible: null,
+                near_transit: null,
+                community_amenities: []
+              },
+              rules: {
+                pets_allowed: pets === 'Yes' ? true : pets === 'No' ? false : null,
+                smoking: false,
+                max_occupancy: null,
+                max_vehicles: null
+              },
+              location: {
+                city,
+                state: 'CA',
+                zip,
+                neighborhood: '',
+                lat: null,
+                lng: null,
+                dist_llnl_miles: dist,
+                drive_time_llnl_min: driveTime,
+                nearest_grocery: [],
+                nearest_hospital: null
+              },
+              lease: {
+                contract_type: 'Monthly furnished rental',
+                min_stay_days: 30,
+                available_from: availFrom,
+                available_until: availUntil
+              },
+              landlord: {
+                name: '',
+                location: '',
+                tenure_months: 0,
+                verifications: [],
+                reviews: 0
+              },
+              remote_work: {
+                wifi_included: wifi === 'Yes' ? true : wifi === 'No' ? false : null,
+                quiet_environment: false,
+                dedicated_workspace: false,
+                score: 3
+              },
+              commute: {
+                one_way_miles: dist,
+                est_monthly_gas: gasEstimate,
+                methods: dist > 0 ? ['Drive'] : []
+              },
+              photos_url: null,
+              notes: notes || ''
+            };
+
+            // Read existing apartments.json
+            const fs = require('fs');
+            const filePath = 'src/data/apartments.json';
+            const existing = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            existing.push(listing);
+            const output = JSON.stringify(existing, null, 2) + '\n';
+
+            core.setOutput('json', output);
+            core.setOutput('name', name);
+            core.setOutput('issue_number', issueNumber);
+            core.setOutput('branch', `listing/issue-${issueNumber}`);
+
+      - name: Create branch and commit
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BRANCH="${{ steps.parse.outputs.branch }}"
+          git checkout -b "$BRANCH"
+          echo '${{ steps.parse.outputs.json }}' > src/data/apartments.json
+          git add src/data/apartments.json
+          git commit -m "Add listing: ${{ steps.parse.outputs.name }}
+
+          Closes #${{ steps.parse.outputs.issue_number }}"
+          git push origin "$BRANCH"
+
+      - name: Create Pull Request
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = ${{ steps.parse.outputs.issue_number }};
+            const name = `${{ steps.parse.outputs.name }}`;
+            const branch = `${{ steps.parse.outputs.branch }}`;
+
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Add listing: ${name}`,
+              head: branch,
+              base: 'main',
+              body: `## New Listing\n\nAdds **${name}** from issue #${issueNumber}.\n\nReview the JSON diff, fill in any missing fields, then merge to deploy.\n\nCloses #${issueNumber}`
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `✅ PR created: ${pr.html_url}\n\nReview and merge to add this listing to the app.`
+            });
