@@ -1,4 +1,4 @@
-export default function Badge({ children, color = "#4f9eff" }) {
+export default function Badge({ children, color = "var(--accent-blue)" }) {
   return (
     <span style={{
       display: "inline-block",
@@ -6,9 +6,9 @@ export default function Badge({ children, color = "#4f9eff" }) {
       borderRadius: "4px",
       fontSize: "11px",
       fontWeight: 600,
-      background: color + "22",
+      background: color + "14",
       color: color,
-      border: `1px solid ${color}44`,
+      border: `1px solid ${color}30`,
       marginRight: 4,
       marginBottom: 4,
       whiteSpace: "nowrap",
@@ -17,9 +17,9 @@ export default function Badge({ children, color = "#4f9eff" }) {
 }
 
 export function BoolBadge({ value, trueLabel = "Yes", falseLabel = "No" }) {
-  if (value === null || value === undefined) return <Badge color="#64748b">N/A</Badge>;
-  if (typeof value === "string") return <Badge color="#f59e0b">{value}</Badge>;
+  if (value === null || value === undefined) return <Badge color="#94a3b8">N/A</Badge>;
+  if (typeof value === "string") return <Badge color="#d97706">{value}</Badge>;
   return value
-    ? <Badge color="#22c55e">{trueLabel}</Badge>
-    : <Badge color="#ef4444">{falseLabel}</Badge>;
+    ? <Badge color="#059669">{trueLabel}</Badge>
+    : <Badge color="#dc2626">{falseLabel}</Badge>;
 }

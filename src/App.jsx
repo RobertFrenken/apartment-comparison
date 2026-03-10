@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import "./index.css";
 import initialApartments from "./data/apartments.json";
 import ComparisonTable from "./components/ComparisonTable.jsx";
@@ -29,42 +29,47 @@ export default function App() {
   };
 
   return (
-    <div style={{ padding: "24px", maxWidth: 1400, margin: "0 auto" }}>
+    <div style={{ padding: "32px 24px", maxWidth: 1400, margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 28 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
           <h1 style={{
-            fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: "-0.5px",
+            fontSize: 24, fontWeight: 700, margin: 0,
             fontFamily: "'Space Grotesk', sans-serif",
-            background: "linear-gradient(90deg, #4f9eff, #00d4aa)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>APARTMENT COMPARISON</h1>
-          <span style={{ color: "#334155", fontSize: 11, letterSpacing: 2 }}>
-            // LLNL INTERNSHIP 2026
+            color: "var(--accent-blue)",
+          }}>Apartment Comparison</h1>
+          <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
+            LLNL Internship 2026
           </span>
         </div>
-        <p style={{ color: "#475569", fontSize: 12, margin: 0 }}>
-          {apartments.length} listings loaded — Livermore, CA
+        <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: 0 }}>
+          {apartments.length} listings in Livermore, CA
         </p>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid #1e293b", paddingBottom: 8 }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "2px solid var(--border)", paddingBottom: 0 }}>
         {TABS.map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
-            background: activeTab === tab ? "#1e3a5f" : "transparent",
-            border: `1px solid ${activeTab === tab ? "#4f9eff" : "#1e293b"}`,
-            color: activeTab === tab ? "#4f9eff" : "#475569",
-            borderRadius: 6, padding: "6px 16px", cursor: "pointer",
-            fontSize: 12, fontWeight: 600, fontFamily: "inherit", letterSpacing: 1,
-          }}>{tab.toUpperCase()}</button>
+            background: "none",
+            borderBottom: activeTab === tab ? "2px solid var(--accent-blue)" : "2px solid transparent",
+            border: "none",
+            borderBottomWidth: 2,
+            borderBottomStyle: "solid",
+            borderBottomColor: activeTab === tab ? "var(--accent-blue)" : "transparent",
+            color: activeTab === tab ? "var(--accent-blue)" : "var(--text-secondary)",
+            padding: "10px 20px", cursor: "pointer",
+            fontSize: 13, fontWeight: activeTab === tab ? 600 : 400,
+            fontFamily: "inherit", marginBottom: -2,
+            transition: "all 0.15s",
+          }}>{tab}</button>
         ))}
         <div style={{ flex: 1 }} />
         <button onClick={resetData} style={{
-          background: "none", border: "1px solid #334155", color: "#64748b",
-          borderRadius: 4, padding: "4px 10px", cursor: "pointer", fontSize: 10,
-          fontFamily: "inherit",
-        }}>Reset to defaults</button>
+          background: "none", border: "1px solid var(--border)", color: "var(--text-muted)",
+          borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
+          fontFamily: "inherit", alignSelf: "center", marginBottom: 4,
+        }}>Reset data</button>
       </div>
 
       {/* Tab Content */}
