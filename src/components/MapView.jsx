@@ -3,43 +3,13 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import manifest from "../data/manifest.json";
 import { cardStyle, btnSmall } from "../lib/styles.js";
+import {
+  MAP_CONFIG, MARKER_SIZES, POPUP_OFFSETS, RADIUS_SLIDER,
+  CATEGORY_COLORS, CATEGORY_LABELS, FILTERABLE_CATEGORIES,
+} from "../lib/constants.js";
+import { haversineMiles, geoCircle } from "../lib/geo.js";
 
 const LLNL = manifest.target_location;
-
-const TRI_VALLEY_BOUNDS = [
-  [-122.20, 37.45],
-  [-121.50, 37.90],
-];
-
-const CATEGORY_COLORS = {
-  apartment: "#2563eb",
-  work: "#dc2626",
-  grocery: "#059669",
-  hospital: "#7c3aed",
-  transit: "#d97706",
-  restaurant: "#f97316",
-  park: "#22c55e",
-  gym: "#8b5cf6",
-  shopping: "#ec4899",
-  area: "#64748b",
-  landmark: "#0891b2",
-};
-
-const CATEGORY_LABELS = {
-  apartment: "Apartments",
-  work: "LLNL",
-  grocery: "Grocery",
-  restaurant: "Restaurants",
-  park: "Parks",
-  gym: "Gyms",
-  shopping: "Shopping",
-  hospital: "Hospital",
-  transit: "Transit",
-  area: "Areas",
-  landmark: "Landmarks",
-};
-
-const FILTERABLE_CATEGORIES = ["grocery", "restaurant", "park", "gym", "shopping", "hospital", "transit", "area", "landmark"];
 
 function createMarkerEl(color, size = 14) {
   const el = document.createElement("div");
@@ -60,28 +30,6 @@ function popupHtml(name, detail, color) {
   </div>`;
 }
 
-function haversineMiles(lat1, lng1, lat2, lng2) {
-  const R = 3958.8;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function geoCircle(center, radiusMiles, steps = 64) {
-  const km = radiusMiles * 1.60934;
-  const coords = [];
-  for (let i = 0; i <= steps; i++) {
-    const angle = (i / steps) * 2 * Math.PI;
-    const lat = center[1] + (km * Math.sin(angle)) / 111.32;
-    const lng = center[0] + (km * Math.cos(angle)) / (111.32 * Math.cos(center[1] * Math.PI / 180));
-    coords.push([lng, lat]);
-  }
-  return { type: "Feature", geometry: { type: "Polygon", coordinates: [coords] } };
-}
-
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
 
 export default function MapView({ apartments }) {
@@ -90,7 +38,7 @@ export default function MapView({ apartments }) {
   const markersRef = useRef({ poi: [], apt: [] });
 
   const [focusAptId, setFocusAptId] = useState("");
-  const [radius, setRadius] = useState(2);
+  const [radius, setRadius] = useState(RADIUS_SLIDER.default);
   const [hiddenCats, setHiddenCats] = useState(new Set());
 
   const focusApt = apartments.find((a) => a.id === focusAptId);
@@ -101,12 +49,12 @@ export default function MapView({ apartments }) {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+      style: MAP_CONFIG.tileStyle,
       center: [LLNL.lng, LLNL.lat],
-      zoom: 11.5,
-      maxBounds: TRI_VALLEY_BOUNDS,
-      minZoom: 9,
-      maxZoom: 17,
+      zoom: MAP_CONFIG.initialZoom,
+      maxBounds: MAP_CONFIG.bounds,
+      minZoom: MAP_CONFIG.minZoom,
+      maxZoom: MAP_CONFIG.maxZoom,
     });
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
@@ -129,10 +77,10 @@ export default function MapView({ apartments }) {
       });
 
       // LLNL marker
-      const llnlEl = createMarkerEl(CATEGORY_COLORS.work, 20);
+      const llnlEl = createMarkerEl(CATEGORY_COLORS.work, MARKER_SIZES.llnl);
       new maplibregl.Marker({ element: llnlEl })
         .setLngLat([LLNL.lng, LLNL.lat])
-        .setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(
+        .setPopup(new maplibregl.Popup({ offset: POPUP_OFFSETS.llnl }).setHTML(
           popupHtml("LLNL", "7000 East Ave, Livermore, CA 94550", CATEGORY_COLORS.work)
         ))
         .addTo(map);
@@ -140,7 +88,7 @@ export default function MapView({ apartments }) {
       // Apartment markers
       apartments.forEach((a) => {
         if (a.location.lat == null || a.location.lng == null) return;
-        const el = createMarkerEl(CATEGORY_COLORS.apartment, 18);
+        const el = createMarkerEl(CATEGORY_COLORS.apartment, MARKER_SIZES.apartment);
         const detail = [
           `$${a.financials.monthly_rent.toLocaleString()}/mo`,
           `${a.space.sqft?.toLocaleString()} sq ft`,
@@ -149,7 +97,7 @@ export default function MapView({ apartments }) {
         ].join("<br>");
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([a.location.lng, a.location.lat])
-          .setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(
+          .setPopup(new maplibregl.Popup({ offset: POPUP_OFFSETS.apartment }).setHTML(
             popupHtml(a.name, detail, CATEGORY_COLORS.apartment)
           ))
           .addTo(map);
@@ -160,10 +108,10 @@ export default function MapView({ apartments }) {
       manifest.points_of_interest.forEach((poi) => {
         if (poi.category === "work") return;
         const color = CATEGORY_COLORS[poi.category] || "#64748b";
-        const el = createMarkerEl(color, 10);
+        const el = createMarkerEl(color, MARKER_SIZES.poi);
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([poi.lng, poi.lat])
-          .setPopup(new maplibregl.Popup({ offset: 8 }).setHTML(
+          .setPopup(new maplibregl.Popup({ offset: POPUP_OFFSETS.poi }).setHTML(
             popupHtml(poi.name, CATEGORY_LABELS[poi.category] || poi.category, color)
           ))
           .addTo(map);
@@ -180,7 +128,7 @@ export default function MapView({ apartments }) {
         if (a.location.lat != null && a.location.lng != null)
           bounds.extend([a.location.lng, a.location.lat]);
       });
-      map.fitBounds(bounds, { padding: 50, maxZoom: 13 });
+      map.fitBounds(bounds, { padding: MAP_CONFIG.fitBoundsPadding, maxZoom: MAP_CONFIG.fitBoundsMaxZoom });
     });
 
     return () => {
@@ -201,7 +149,7 @@ export default function MapView({ apartments }) {
     if (focusApt && focusApt.location.lat != null && focusApt.location.lng != null) {
       const center = [focusApt.location.lng, focusApt.location.lat];
       source.setData(geoCircle(center, radius));
-      map.flyTo({ center, zoom: 13, duration: 800 });
+      map.flyTo({ center, zoom: MAP_CONFIG.flyToZoom, duration: MAP_CONFIG.flyToDuration });
     } else {
       source.setData(EMPTY_FC);
     }
@@ -267,9 +215,9 @@ export default function MapView({ apartments }) {
             </label>
             <input
               type="range"
-              min={0.5}
-              max={5}
-              step={0.5}
+              min={RADIUS_SLIDER.min}
+              max={RADIUS_SLIDER.max}
+              step={RADIUS_SLIDER.step}
               value={radius}
               onChange={(e) => setRadius(Number(e.target.value))}
               style={{ width: 120, accentColor: "var(--accent-blue)" }}

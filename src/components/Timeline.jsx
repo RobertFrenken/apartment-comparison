@@ -1,12 +1,10 @@
 import { useEffect, useRef } from "react";
 import Gantt from "frappe-gantt";
 import "../../node_modules/frappe-gantt/dist/frappe-gantt.css";
-import { COLORS } from "../lib/constants.js";
+import { COLORS, GANTT_CONFIG } from "../lib/constants.js";
 import { cardStyle } from "../lib/styles.js";
-
-function formatDate(d) {
-  return d.toISOString().slice(0, 10);
-}
+import { formatDate } from "../lib/format.js";
+import manifest from "../data/manifest.json";
 
 export default function Timeline({ apartments, onUpdateDates }) {
   const containerRef = useRef(null);
@@ -20,12 +18,13 @@ export default function Timeline({ apartments, onUpdateDates }) {
 
     containerRef.current.innerHTML = "";
 
+    const { start: intStart, end: intEnd } = manifest.internship_dates;
     const tasks = [
       {
         id: "internship",
-        name: "Internship (May 22 – Aug 25)",
-        start: "2026-05-22",
-        end: "2026-08-25",
+        name: `Internship (${intStart} – ${intEnd})`,
+        start: intStart,
+        end: intEnd,
         progress: 0,
         custom_class: "gantt-internship",
       },
@@ -40,10 +39,10 @@ export default function Timeline({ apartments, onUpdateDates }) {
     ];
 
     new Gantt(containerRef.current, tasks, {
-      view_mode: "Month",
-      bar_height: 24,
-      padding: 14,
-      date_format: "YYYY-MM-DD",
+      view_mode: GANTT_CONFIG.viewMode,
+      bar_height: GANTT_CONFIG.barHeight,
+      padding: GANTT_CONFIG.padding,
+      date_format: GANTT_CONFIG.dateFormat,
       on_date_change: (task, start, end) => {
         if (task.id === "internship") return;
         onUpdateDates?.(task.id, formatDate(start), formatDate(end));

@@ -1,16 +1,10 @@
 import { CRITERIA, DEFAULT_WEIGHTS, scoreCriterion } from "../lib/scoring.js";
-import { COLORS } from "../lib/constants.js";
+import { COLORS, RADAR } from "../lib/constants.js";
 import { cardStyle } from "../lib/styles.js";
 
-const CX = 200;
-const CY = 200;
-const R = 140;
-const LABEL_R = 168;
-const RINGS = [0.25, 0.5, 0.75, 1.0];
-
-function axisPoint(axisIndex, fraction, numAxes, r = R) {
+function axisPoint(axisIndex, fraction, numAxes, r = RADAR.radius) {
   const angle = (2 * Math.PI * axisIndex) / numAxes - Math.PI / 2;
-  return [CX + r * fraction * Math.cos(angle), CY + r * fraction * Math.sin(angle)];
+  return [RADAR.cx + r * fraction * Math.cos(angle), RADAR.cy + r * fraction * Math.sin(angle)];
 }
 
 function polyPoints(points) {
@@ -23,14 +17,14 @@ export default function RadarChart({ apartments, weights = DEFAULT_WEIGHTS }) {
   // Only show axes for criteria with non-zero weight
   const activeCriteria = CRITERIA.filter((c) => (weights[c.key] ?? 0) > 0);
   const numAxes = activeCriteria.length;
-  if (numAxes < 3) return null;
+  if (numAxes < RADAR.minAxes) return null;
 
   const aptScores = apartments.map((apt) =>
     activeCriteria.map((c) => scoreCriterion(c, apt) / 10)
   );
 
   const axisEndpoints = activeCriteria.map((_, i) => axisPoint(i, 1.0, numAxes));
-  const labelPoints = activeCriteria.map((_, i) => axisPoint(i, 1.0, numAxes, LABEL_R));
+  const labelPoints = activeCriteria.map((_, i) => axisPoint(i, 1.0, numAxes, RADAR.labelRadius));
 
   function labelStyle(axisIndex) {
     const angle = (2 * Math.PI * axisIndex) / numAxes - Math.PI / 2;
@@ -72,12 +66,12 @@ export default function RadarChart({ apartments, weights = DEFAULT_WEIGHTS }) {
 
       <div style={{ display: "flex", justifyContent: "center" }}>
         <svg
-          viewBox="0 0 400 400"
+          viewBox={RADAR.viewBox}
           style={{ width: "100%", maxWidth: 400, display: "block" }}
           aria-label={`Radar chart comparing apartment scores across ${numAxes} criteria`}
         >
           {/* Concentric guide rings */}
-          {RINGS.map((fraction) => {
+          {RADAR.rings.map((fraction) => {
             const ringPoints = activeCriteria.map((_, i) => axisPoint(i, fraction, numAxes));
             return (
               <polygon
@@ -93,12 +87,12 @@ export default function RadarChart({ apartments, weights = DEFAULT_WEIGHTS }) {
           })}
 
           {/* Ring percentage labels */}
-          {RINGS.map((fraction) => {
+          {RADAR.rings.map((fraction) => {
             const [, y] = axisPoint(0, fraction, numAxes);
             return (
               <text
                 key={`ring-label-${fraction}`}
-                x={CX + 6}
+                x={RADAR.cx + 6}
                 y={y}
                 fontSize={8}
                 fill="var(--text-muted, #94a3b8)"
@@ -114,7 +108,7 @@ export default function RadarChart({ apartments, weights = DEFAULT_WEIGHTS }) {
           {axisEndpoints.map(([x, y], i) => (
             <line
               key={`axis-${i}`}
-              x1={CX} y1={CY} x2={x} y2={y}
+              x1={RADAR.cx} y1={RADAR.cy} x2={x} y2={y}
               stroke="var(--border, #e2e8f0)"
               strokeWidth={0.8}
               opacity={0.8}
@@ -148,7 +142,7 @@ export default function RadarChart({ apartments, weights = DEFAULT_WEIGHTS }) {
               return (
                 <circle
                   key={`dot-${ai}-${axisIdx}`}
-                  cx={x} cy={y} r={3}
+                  cx={x} cy={y} r={RADAR.dotRadius}
                   fill={color} stroke="#fff" strokeWidth={1} opacity={0.9}
                 />
               );
@@ -175,7 +169,7 @@ export default function RadarChart({ apartments, weights = DEFAULT_WEIGHTS }) {
             );
           })}
 
-          <circle cx={CX} cy={CY} r={2.5} fill="var(--border, #e2e8f0)" />
+          <circle cx={RADAR.cx} cy={RADAR.cy} r={2.5} fill="var(--border, #e2e8f0)" />
         </svg>
       </div>
     </div>

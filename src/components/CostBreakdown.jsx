@@ -1,7 +1,7 @@
 import { fmt } from "../lib/format.js";
-import { COLORS } from "../lib/constants.js";
-import { cardStyle, sectionHeading, thStyle } from "../lib/styles.js";
-import { moveInCost } from "../lib/costs.js";
+import { COLORS, DAYS_PER_MONTH } from "../lib/constants.js";
+import { cardStyle, sectionHeading, thStyle, rowBg } from "../lib/styles.js";
+import { moveInCost, stayDays } from "../lib/costs.js";
 import { costPerPerson } from "../lib/scoring.js";
 
 function Bar({ value, max, color, label }) {
@@ -26,13 +26,11 @@ export default function CostBreakdown({ apartments }) {
     const monthly = rent + utils;
     const gas = a.commute?.est_monthly_gas || 0;
     const totalMonthly = monthly + gas;
-    const stayDays = a.lease.available_from && a.lease.available_until
-      ? Math.round((new Date(a.lease.available_until) - new Date(a.lease.available_from)) / 86400000)
-      : 90;
-    const stayMonths = stayDays / 30;
+    const days = stayDays(a);
+    const stayMonths = days / DAYS_PER_MONTH;
     const moveIn = moveInCost(a);
     const totalStay = moveIn + totalMonthly * (stayMonths - 1);
-    return { ...a, rent, utils, monthly, gas, totalMonthly, stayDays, stayMonths, moveIn, totalStay };
+    return { ...a, rent, utils, monthly, gas, totalMonthly, days, stayMonths, moveIn, totalStay };
   });
 
   const maxMonthly = Math.max(...costs.map((c) => c.totalMonthly));
@@ -67,7 +65,7 @@ export default function CostBreakdown({ apartments }) {
         </div>
         <div style={cardStyle}>
           <h3 style={{ ...sectionHeading, marginBottom: 16 }}>
-            Total Stay Cost ({costs[0]?.stayDays} days)
+            Total Stay Cost ({costs[0]?.days} days)
           </h3>
           {costs.map((c, i) => (
             <Bar key={c.id} label={c.name.split(" ")[0]} value={Math.round(c.totalStay)} max={maxTotal} color={COLORS[i % COLORS.length]} />
@@ -96,12 +94,12 @@ export default function CostBreakdown({ apartments }) {
               ["= Monthly Total", (c) => fmt(Math.round(c.totalMonthly))],
               ["Cost / Person", (c) => fmt(costPerPerson(c))],
               ["Move-in Cost", (c) => fmt(c.moveIn)],
-              [`Total Stay (${costs[0]?.stayDays}d)`, (c) => fmt(Math.round(c.totalStay))],
-              ["Cost / day", (c) => fmt(Math.round(c.totalStay / c.stayDays))],
+              [`Total Stay (${costs[0]?.days}d)`, (c) => fmt(Math.round(c.totalStay))],
+              ["Cost / day", (c) => fmt(Math.round(c.totalStay / c.days))],
             ].map(([label, fn], ri) => {
               const isTotal = label.startsWith("=") || label.startsWith("Total");
               return (
-                <tr key={label} style={{ background: ri % 2 === 0 ? "var(--bg-row-even)" : "var(--bg-row-odd)" }}>
+                <tr key={label} style={{ background: rowBg(ri) }}>
                   <td style={{ padding: "10px 12px", color: isTotal ? "var(--text-primary)" : "var(--text-secondary)", fontWeight: isTotal ? 600 : 400 }}>{label}</td>
                   {costs.map((c) => (
                     <td key={c.id} style={{ padding: "10px 12px", textAlign: "right", color: "var(--text-primary)", fontWeight: isTotal ? 600 : 400 }}>{fn(c)}</td>

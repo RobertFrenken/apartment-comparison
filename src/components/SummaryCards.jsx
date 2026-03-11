@@ -1,6 +1,6 @@
 import { calcOverallScore, costPerPerson } from "../lib/scoring.js";
 import { totalMonthlyCost } from "../lib/costs.js";
-import { COLORS } from "../lib/constants.js";
+import { COLORS, COST_THRESHOLDS } from "../lib/constants.js";
 
 function calcVerdicts(apartments, weights, brackets) {
   const totalCosts = apartments.map(totalMonthlyCost);
@@ -27,8 +27,8 @@ function calcVerdicts(apartments, weights, brackets) {
 }
 
 function costColor(total) {
-  if (total < 4500) return "var(--accent-green)";
-  if (total < 5500) return "var(--accent-amber)";
+  if (total < COST_THRESHOLDS.low) return "var(--accent-green)";
+  if (total < COST_THRESHOLDS.mid) return "var(--accent-amber)";
   return "var(--accent-red)";
 }
 

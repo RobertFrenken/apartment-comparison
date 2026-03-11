@@ -5,7 +5,7 @@ import {
   bracketLabels, costPerPerson,
 } from "../lib/scoring.js";
 import { COLORS } from "../lib/constants.js";
-import { cardStyle, sectionHeading, btnSmall } from "../lib/styles.js";
+import { cardStyle, sectionHeading, btnSmall, miniThStyle } from "../lib/styles.js";
 import WeightSliders from "./WeightSliders.jsx";
 import RadarChart from "./RadarChart.jsx";
 
@@ -270,10 +270,10 @@ function ChecklistBreakdown({ criterion: c, apartments }) {
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr>
-            <th style={miniTh}>Item</th>
-            <th style={{ ...miniTh, textAlign: "center", width: 40 }}>Pts</th>
+            <th style={miniThStyle}>Item</th>
+            <th style={{ ...miniThStyle, textAlign: "center", width: 40 }}>Pts</th>
             {apartments.map((a, i) => (
-              <th key={a.id} style={{ ...miniTh, textAlign: "center", color: COLORS[i % COLORS.length] }}>
+              <th key={a.id} style={{ ...miniThStyle, textAlign: "center", color: COLORS[i % COLORS.length] }}>
                 {a.name.split(" ")[0]}
               </th>
             ))}
@@ -399,12 +399,3 @@ function ApartmentScoreTable({ criterion: c, apartments, brackets }) {
   );
 }
 
-const miniTh = {
-  padding: "6px 8px",
-  textAlign: "left",
-  fontSize: 11,
-  fontWeight: 600,
-  color: "var(--text-muted)",
-  borderBottom: "2px solid var(--border)",
-  whiteSpace: "nowrap",
-};
