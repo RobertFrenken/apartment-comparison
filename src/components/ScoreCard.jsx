@@ -2,7 +2,7 @@ import RadarChart from "./RadarChart.jsx";
 import WeightSliders from "./WeightSliders.jsx";
 import { CRITERIA, scoreCriterion, criterionDetail, calcOverallScore, costPerPerson } from "../lib/scoring.js";
 import { COLORS } from "../lib/constants.js";
-import { cardStyle, sectionHeading, thStyle } from "../lib/styles.js";
+import { cardStyle, sectionHeading, thStyle, rowBg } from "../lib/styles.js";
 
 function ScoreBar({ score, maxScore, color }) {
   const pct = (score / maxScore) * 100;
@@ -95,7 +95,7 @@ export default function ScoreCard({ apartments, weights, brackets, onWeightsChan
           </thead>
           <tbody>
             {CRITERIA.map((c, ci) => (
-              <tr key={c.key} style={{ background: ci % 2 === 0 ? "var(--bg-row-even)" : "var(--bg-row-odd)" }}>
+              <tr key={c.key} style={{ background: rowBg(ci) }}>
                 <td style={{ padding: "10px 12px", color: "var(--text-secondary)" }}>{c.name}</td>
                 <td style={{ padding: "10px 12px", textAlign: "center", color: "var(--text-muted)" }}>{weights[c.key] ?? 0}%</td>
                 {scored.map((s) => {

@@ -2,6 +2,7 @@
 // Used by: ScoreCard, SummaryCards, RadarChart, Calculator
 
 import { totalMonthlyCost, moveInCost } from "./costs.js";
+import { BRACKET_SCORES, BRACKET_FLOOR, CHECKLIST_CAP, REMOTE_WORK_SCALE_FACTOR } from "./constants.js";
 
 // --- Criterion types ---
 // "bracket"   — numeric value scored against configurable thresholds
@@ -100,7 +101,7 @@ export const CRITERIA = [
     key: "remote_work",
     name: "Remote Work",
     type: "scale",
-    getScore: (a) => Math.min((a.remote_work?.score || 3) * 2, 10),
+    getScore: (a) => Math.min((a.remote_work?.score || 3) * REMOTE_WORK_SCALE_FACTOR, 10),
     formatValue: (a) => `${a.remote_work?.score || "?"}/5`,
     description: "Self-assessed 1-5 score (doubled to 0-10) based on WiFi, quiet environment, dedicated workspace.",
   },
@@ -124,19 +125,18 @@ export const DEFAULT_WEIGHTS = {
 // direction "lower": value ≤ bracket[0] → 10, ≤ bracket[1] → 8, etc.
 // direction "higher": value ≥ bracket[0] → 10, ≥ bracket[1] → 8, etc.
 export function scoreBracket(value, brackets, direction) {
-  const scores = [10, 8, 6, 4];
   for (let i = 0; i < brackets.length; i++) {
     if (direction === "lower" ? value <= brackets[i] : value >= brackets[i]) {
-      return scores[i];
+      return BRACKET_SCORES[i];
     }
   }
-  return 2;
+  return BRACKET_FLOOR;
 }
 
 // Score a checklist criterion — sum item points, cap at 10
 export function scoreChecklist(apartment, items) {
   const raw = items.reduce((sum, item) => sum + (item.check(apartment) ? item.points : 0), 0);
-  return Math.min(raw, 10);
+  return Math.min(raw, CHECKLIST_CAP);
 }
 
 // Get the detail string for a checklist (which items pass)
@@ -198,7 +198,7 @@ export function calcOverallScore(a, weights = DEFAULT_WEIGHTS, brackets = null) 
 export function bracketLabels(criterion, customBrackets) {
   if (criterion.type !== "bracket") return [];
   const brackets = customBrackets?.[criterion.key] || criterion.defaultBrackets;
-  const scores = [10, 8, 6, 4, 2];
+  const scores = [...BRACKET_SCORES, BRACKET_FLOOR];
   const op = criterion.direction === "lower" ? "≤" : "≥";
   const labels = brackets.map((b, i) => ({
     threshold: b,
@@ -207,8 +207,8 @@ export function bracketLabels(criterion, customBrackets) {
   }));
   labels.push({
     threshold: null,
-    score: 2,
-    label: `Otherwise → 2 pts`,
+    score: BRACKET_FLOOR,
+    label: `Otherwise → ${BRACKET_FLOOR} pts`,
   });
   return labels;
 }

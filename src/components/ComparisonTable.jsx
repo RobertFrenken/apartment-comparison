@@ -1,59 +1,11 @@
 import { useState, useEffect } from "react";
 import Badge, { BoolBadge } from "./Badge.jsx";
 import SummaryCards from "./SummaryCards.jsx";
-import { fmt } from "../lib/format.js";
-import { totalMonthlyCost, moveInCost } from "../lib/costs.js";
+import { fmt, formatDays } from "../lib/format.js";
+import { totalMonthlyCost, moveInCost, stayDays } from "../lib/costs.js";
 import { GREEN_TINT, RED_TINT } from "../lib/constants.js";
-import { btnSmall } from "../lib/styles.js";
-
-// --- Highlighting helpers ---
-
-function lowerIsBetter(valueFn) {
-  return (apartments) => {
-    const entries = apartments
-      .map((a) => ({ id: a.id, v: valueFn(a) }))
-      .filter((e) => e.v != null && isFinite(e.v));
-    if (entries.length < 2) return {};
-    const min = Math.min(...entries.map((e) => e.v));
-    const max = Math.max(...entries.map((e) => e.v));
-    if (min === max) return {};
-    return {
-      bestIds:  new Set(entries.filter((e) => e.v === min).map((e) => e.id)),
-      worstIds: new Set(entries.filter((e) => e.v === max).map((e) => e.id)),
-    };
-  };
-}
-
-function higherIsBetter(valueFn) {
-  return (apartments) => {
-    const entries = apartments
-      .map((a) => ({ id: a.id, v: valueFn(a) }))
-      .filter((e) => e.v != null && isFinite(e.v));
-    if (entries.length < 2) return {};
-    const min = Math.min(...entries.map((e) => e.v));
-    const max = Math.max(...entries.map((e) => e.v));
-    if (min === max) return {};
-    return {
-      bestIds:  new Set(entries.filter((e) => e.v === max).map((e) => e.id)),
-      worstIds: new Set(entries.filter((e) => e.v === min).map((e) => e.id)),
-    };
-  };
-}
-
-function boolTrueIsBetter(valueFn) {
-  return (apartments) => {
-    const entries = apartments
-      .map((a) => ({ id: a.id, v: valueFn(a) }))
-      .filter((e) => e.v != null);
-    const hasTrue  = entries.some((e) => e.v === true);
-    const hasFalse = entries.some((e) => e.v === false);
-    if (!hasTrue || !hasFalse) return {};
-    return {
-      bestIds:  new Set(entries.filter((e) => e.v === true).map((e) => e.id)),
-      worstIds: new Set(entries.filter((e) => e.v === false).map((e) => e.id)),
-    };
-  };
-}
+import { btnSmall, rowBg as getRowBg, stickyCol } from "../lib/styles.js";
+import { numericBest, boolBest } from "../lib/compare.js";
 
 function computeTints(row, apartments) {
   if (!row.bestFn) return new Map();
@@ -75,38 +27,38 @@ const SECTIONS = [
       {
         label: "Monthly Rent",
         render: (a) => `${fmt(a.financials.monthly_rent)}/mo`,
-        bestFn: lowerIsBetter((a) => a.financials.monthly_rent),
+        bestFn: numericBest((a) => a.financials.monthly_rent),
       },
       { label: "Utilities Included", render: (a) => <BoolBadge value={a.financials.utilities_included} /> },
       {
         label: "Est. Utilities",
         render: (a) => a.financials.utilities_included ? "Included" : `~${fmt(a.financials.est_monthly_utilities)}/mo`,
-        bestFn: lowerIsBetter((a) => a.financials.utilities_included ? 0 : (a.financials.est_monthly_utilities ?? null)),
+        bestFn: numericBest((a) => a.financials.utilities_included ? 0 : (a.financials.est_monthly_utilities ?? null)),
       },
       {
         label: "Total Monthly Cost",
         render: (a) => `${fmt(totalMonthlyCost(a))}/mo`,
-        bestFn: lowerIsBetter(totalMonthlyCost),
+        bestFn: numericBest(totalMonthlyCost),
       },
       {
         label: "Security Deposit",
         render: (a) => fmt(a.financials.security_deposit),
-        bestFn: lowerIsBetter((a) => a.financials.security_deposit),
+        bestFn: numericBest((a) => a.financials.security_deposit),
       },
       {
         label: "Application Fee",
         render: (a) => a.financials.application_fee ? fmt(a.financials.application_fee) : "None",
-        bestFn: lowerIsBetter((a) => a.financials.application_fee ?? 0),
+        bestFn: numericBest((a) => a.financials.application_fee ?? 0),
       },
       {
         label: "Cleaning Fee",
         render: (a) => fmt(a.financials.cleaning_fee),
-        bestFn: lowerIsBetter((a) => a.financials.cleaning_fee ?? 0),
+        bestFn: numericBest((a) => a.financials.cleaning_fee ?? 0),
       },
       {
         label: "Total Move-in Cost",
         render: (a) => fmt(moveInCost(a)),
-        bestFn: lowerIsBetter(moveInCost),
+        bestFn: numericBest(moveInCost),
       },
     ],
   },
@@ -116,50 +68,50 @@ const SECTIONS = [
       {
         label: "Square Footage",
         render: (a) => `${a.space.sqft?.toLocaleString() || "N/A"} sq ft`,
-        bestFn: higherIsBetter((a) => a.space.sqft ?? null),
+        bestFn: numericBest((a) => a.space.sqft ?? null, "higher"),
       },
       {
         label: "Price / sq ft",
         render: (a) => a.space.sqft ? `$${(a.financials.monthly_rent / a.space.sqft).toFixed(2)}/sq ft` : "N/A",
-        bestFn: lowerIsBetter((a) => a.space.sqft ? a.financials.monthly_rent / a.space.sqft : null),
+        bestFn: numericBest((a) => a.space.sqft ? a.financials.monthly_rent / a.space.sqft : null),
       },
       {
         label: "Bedrooms",
         render: (a) => a.space.bedrooms,
-        bestFn: higherIsBetter((a) => a.space.bedrooms ?? null),
+        bestFn: numericBest((a) => a.space.bedrooms ?? null, "higher"),
       },
       { label: "Bedroom Details", render: (a) => a.space.bedroom_details?.map((b, i) => <Badge key={i} color="#7c3aed">{b}</Badge>) },
       {
         label: "Bathrooms",
         render: (a) => a.space.bathrooms,
-        bestFn: higherIsBetter((a) => a.space.bathrooms ?? null),
+        bestFn: numericBest((a) => a.space.bathrooms ?? null, "higher"),
       },
       { label: "Parking", render: (a) => a.space.parking || "N/A" },
       { label: "Outdoor Space", render: (a) => a.space.outdoor_space || "N/A" },
       {
         label: "Pool",
         render: (a) => <BoolBadge value={a.space.pool} />,
-        bestFn: boolTrueIsBetter((a) => a.space.pool),
+        bestFn: boolBest((a) => a.space.pool),
       },
     ],
   },
   {
     title: "Appliances",
     rows: [
-      { label: "Washer/Dryer", render: (a) => <BoolBadge value={a.appliances.washer_dryer} />, bestFn: boolTrueIsBetter((a) => a.appliances.washer_dryer) },
-      { label: "Dishwasher", render: (a) => <BoolBadge value={a.appliances.dishwasher} />, bestFn: boolTrueIsBetter((a) => a.appliances.dishwasher) },
-      { label: "Fireplace", render: (a) => <BoolBadge value={a.appliances.fireplace} />, bestFn: boolTrueIsBetter((a) => a.appliances.fireplace) },
+      { label: "Washer/Dryer", render: (a) => <BoolBadge value={a.appliances.washer_dryer} />, bestFn: boolBest((a) => a.appliances.washer_dryer) },
+      { label: "Dishwasher", render: (a) => <BoolBadge value={a.appliances.dishwasher} />, bestFn: boolBest((a) => a.appliances.dishwasher) },
+      { label: "Fireplace", render: (a) => <BoolBadge value={a.appliances.fireplace} />, bestFn: boolBest((a) => a.appliances.fireplace) },
       { label: "Water Softener/RO", render: (a) => <BoolBadge value={a.appliances.water_softener} /> },
     ],
   },
   {
     title: "Amenities",
     rows: [
-      { label: "A/C", render: (a) => <BoolBadge value={a.amenities.ac} />, bestFn: boolTrueIsBetter((a) => a.amenities.ac) },
+      { label: "A/C", render: (a) => <BoolBadge value={a.amenities.ac} />, bestFn: boolBest((a) => a.amenities.ac) },
       {
         label: "Internet/WiFi",
         render: (a) => <BoolBadge value={a.amenities.internet} />,
-        bestFn: boolTrueIsBetter((a) => {
+        bestFn: boolBest((a) => {
           const v = a.amenities.internet;
           if (v == null) return null;
           return v !== false;
@@ -167,7 +119,7 @@ const SECTIONS = [
       },
       { label: "TV", render: (a) => <BoolBadge value={a.amenities.tv} /> },
       { label: "Wheelchair Accessible", render: (a) => <BoolBadge value={a.amenities.wheelchair_accessible} /> },
-      { label: "Near Transit", render: (a) => <BoolBadge value={a.amenities.near_transit} />, bestFn: boolTrueIsBetter((a) => a.amenities.near_transit) },
+      { label: "Near Transit", render: (a) => <BoolBadge value={a.amenities.near_transit} />, bestFn: boolBest((a) => a.amenities.near_transit) },
       { label: "Community Amenities", render: (a) => a.amenities.community_amenities?.length
         ? a.amenities.community_amenities.map((c, i) => <Badge key={i} color="#d97706">{c}</Badge>)
         : <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>None listed</span>
@@ -177,7 +129,7 @@ const SECTIONS = [
   {
     title: "House Rules",
     rows: [
-      { label: "Pets Allowed", render: (a) => <BoolBadge value={a.rules.pets_allowed} />, bestFn: boolTrueIsBetter((a) => a.rules.pets_allowed) },
+      { label: "Pets Allowed", render: (a) => <BoolBadge value={a.rules.pets_allowed} />, bestFn: boolBest((a) => a.rules.pets_allowed) },
       { label: "Smoking", render: (a) => <BoolBadge value={a.rules.smoking} trueLabel="Allowed" falseLabel="Not Allowed" /> },
       { label: "Max Occupancy", render: (a) => a.rules.max_occupancy || "N/A" },
     ],
@@ -190,12 +142,12 @@ const SECTIONS = [
       {
         label: "Distance to LLNL",
         render: (a) => `${a.location.dist_llnl_miles} mi`,
-        bestFn: lowerIsBetter((a) => a.location.dist_llnl_miles ?? null),
+        bestFn: numericBest((a) => a.location.dist_llnl_miles ?? null),
       },
       {
         label: "Drive Time to LLNL",
         render: (a) => `~${a.location.drive_time_llnl_min} min`,
-        bestFn: lowerIsBetter((a) => a.location.drive_time_llnl_min ?? null),
+        bestFn: numericBest((a) => a.location.drive_time_llnl_min ?? null),
       },
       { label: "Nearest Grocery", render: (a) => a.location.nearest_grocery?.map((g, i) =>
         <div key={i} style={{ fontSize: 12, marginBottom: 2 }}>{g.name} — {g.dist_miles} mi</div>
@@ -214,8 +166,7 @@ const SECTIONS = [
       { label: "Available Until", render: (a) => a.lease.available_until },
       { label: "Stay Duration", render: (a) => {
         if (!a.lease.available_from || !a.lease.available_until) return "N/A";
-        const days = Math.round((new Date(a.lease.available_until) - new Date(a.lease.available_from)) / 86400000);
-        return `${days} days (~${(days / 30).toFixed(1)} months)`;
+        return formatDays(stayDays(a));
       }},
     ],
   },
@@ -227,7 +178,7 @@ const SECTIONS = [
       {
         label: "Platform Tenure",
         render: (a) => `${a.landlord.tenure_months} months`,
-        bestFn: higherIsBetter((a) => a.landlord.tenure_months ?? null),
+        bestFn: numericBest((a) => a.landlord.tenure_months ?? null, "higher"),
       },
       { label: "Verifications", render: (a) => a.landlord.verifications?.map((v, i) => <Badge key={i} color="#7c3aed">{v}</Badge>) },
       { label: "Reviews", render: (a) => a.landlord.reviews || "None" },
@@ -239,7 +190,7 @@ const SECTIONS = [
       {
         label: "Est. Monthly Gas",
         render: (a) => a.commute?.est_monthly_gas ? `$${a.commute.est_monthly_gas.toFixed(2)}` : "N/A",
-        bestFn: lowerIsBetter((a) => a.commute?.est_monthly_gas ?? null),
+        bestFn: numericBest((a) => a.commute?.est_monthly_gas ?? null),
       },
       { label: "Commute Methods", render: (a) => a.commute?.methods?.map((m, i) => <Badge key={i} color="#2563eb">{m}</Badge>) },
       {
@@ -249,7 +200,7 @@ const SECTIONS = [
           if (!s) return "N/A";
           return `${s}/5`;
         },
-        bestFn: higherIsBetter((a) => a.remote_work?.score ?? null),
+        bestFn: numericBest((a) => a.remote_work?.score ?? null, "higher"),
       },
     ],
   },
@@ -383,14 +334,13 @@ export default function ComparisonTable({ apartments, onRemove, onDuplicate, wei
                   </tr>
                   {!isCollapsed && section.rows.map((row, ri) => {
                     const tints = computeTints(row, apartments);
-                    const rowBg = ri % 2 === 0 ? "var(--bg-row-even)" : "var(--bg-row-odd)";
+                    const bg = getRowBg(ri);
                     return (
-                      <tr key={`${section.title}-${row.label}`} style={{ background: rowBg }}>
+                      <tr key={`${section.title}-${row.label}`} style={{ background: bg }}>
                         <td style={{
                           padding: "10px 16px", color: "var(--text-secondary)", fontSize: 12,
                           fontWeight: 500, whiteSpace: "nowrap",
-                          borderRight: "1px solid var(--border)", position: "sticky", left: 0,
-                          background: rowBg, zIndex: 1,
+                          ...stickyCol(bg),
                         }}>
                           {row.label}
                         </td>
@@ -414,8 +364,8 @@ export default function ComparisonTable({ apartments, onRemove, onDuplicate, wei
             <tr>
               <td style={{
                 padding: "12px 16px", color: "var(--text-secondary)", fontSize: 12, fontWeight: 500,
-                borderRight: "1px solid var(--border)", borderTop: "1px solid var(--border)",
-                position: "sticky", left: 0, background: "var(--bg-row-even)", zIndex: 1,
+                borderTop: "1px solid var(--border)",
+                ...stickyCol("var(--bg-row-even)"),
               }}>Notes</td>
               {apartments.map((a) => (
                 <td key={a.id} style={{

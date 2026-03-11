@@ -1,5 +1,6 @@
 import { CRITERIA, DEFAULT_WEIGHTS } from "../lib/scoring.js";
 import { cardStyle, btnSmall } from "../lib/styles.js";
+import { WEIGHT_SLIDER } from "../lib/constants.js";
 
 // Reusable weight slider panel for scoring criteria.
 // compact=true: single-row inline sliders for the Compare tab
@@ -85,7 +86,7 @@ export default function WeightSliders({ weights, onChange, compact = false, show
 }
 
 // Full slider row for grid layout
-function WeightSlider({ label, value, onChange, min = 0, max = 40, step = 1 }) {
+function WeightSlider({ label, value, onChange, min = WEIGHT_SLIDER.min, max = WEIGHT_SLIDER.max, step = WEIGHT_SLIDER.step }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 10,
@@ -116,7 +117,7 @@ function CompactSlider({ label, value, onChange }) {
     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
       <span style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{label}</span>
       <input
-        type="range" min={0} max={40} step={1} value={value}
+        type="range" min={WEIGHT_SLIDER.min} max={WEIGHT_SLIDER.max} step={WEIGHT_SLIDER.step} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         style={{ width: 50, accentColor: "var(--accent-blue)", height: 4 }}
       />

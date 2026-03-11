@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cardStyle, btnMedium } from "../lib/styles.js";
+import { gasEstimate } from "../lib/costs.js";
 
 const EMPTY = {
   name: "",
@@ -185,7 +186,7 @@ export default function AddListing({ onAdd }) {
               const miles = Number(e.target.value);
               set("location.dist_llnl_miles", miles);
               set("commute.one_way_miles", miles);
-              if (!form.commute.est_monthly_gas) set("commute.est_monthly_gas", Math.round(miles * 2 * 22 * 0.21 * 100) / 100);
+              if (!form.commute.est_monthly_gas) set("commute.est_monthly_gas", gasEstimate(miles));
             }} /></Field>
             <Field label="Drive Time (min)"><Input type="number" value={form.location.drive_time_llnl_min || ""} onChange={(e) => set("location.drive_time_llnl_min", Number(e.target.value))} /></Field>
 
