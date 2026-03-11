@@ -3,7 +3,7 @@ dist/
 .vite/
 *.local
 
-# Original source files (keep in repo for reference but not in the app)
-# listing1.txt
-# listing2.txt
-# apartment_comparison.xlsx
+# Original source files — excluded because they contain third-party API keys
+listing1.txt
+listing2.txt
+apartment_comparison.xlsx
